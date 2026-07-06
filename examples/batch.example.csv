@@ -1,4 +1,3 @@
-text,width,height,emboss
-A-17,60,30,true
-B-04,60,30,true
-FRAGILE,80,25,false
+part,length,width,height,wall
+box,80,50,30,2
+box,120,80,40,3

@@ -1,0 +1,13 @@
+# daneel batch examples/batch.example.yaml
+parts:
+  - part: box
+    length: 80
+    width: 50
+    height: 30
+  - part: bracket
+    leg_a: 40
+    leg_b: 60
+    holes_per_leg: 3
+  - part: card
+    text: "A-17"
+    out: tag-a17.stl

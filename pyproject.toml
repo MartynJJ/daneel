@@ -16,6 +16,7 @@ dependencies = [
     "cadquery>=2.4",
     "typer>=0.12",       # CLI
     "pydantic>=2",       # config / part parameter models
+    "pyyaml>=6",         # YAML batch specs
     "tomli>=2 ; python_version < '3.11'",
 ]
 

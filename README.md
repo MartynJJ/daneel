@@ -26,17 +26,18 @@ version-controllable, and batchable.
 
 ## Features (roadmap)
 
-### Phase 1 — Parametric part library ✅ (scaffolded)
+### Phase 1 — Parametric part library ✅
 - [x] CadQuery-based part definitions (`src/daneel/parts/`) — each is a `build(params)` function
-- [x] Example part: a labelled tag with embossed text + hole (demonstrates the pattern)
-- [ ] More stock parts: boxes, brackets, spacers, cable clips, drawer inserts, hooks
+- [x] Stock parts: labelled tag (`card`), open-top box, L-bracket with mounting holes
+- [x] Part registry (`daneel list`) — register a new part with one line
+- [x] Parameter validation + sensible defaults per part
+- [ ] More stock parts: spacers, cable clips, drawer inserts, hooks
 - [ ] Gridfinity-compatible bins & baseplates
-- [ ] Parameter validation + sensible defaults per part
 
-### Phase 2 — Export & batch generation
-- [ ] Export to STL / STEP / 3MF from a single call
-- [ ] Batch driver: generate N models/variants from a CSV / YAML spec
-- [ ] Deterministic output naming + a manifest of what was produced
+### Phase 2 — Export & batch generation ✅
+- [x] Export to STL / STEP / 3MF from a single call (`daneel make`)
+- [x] Batch driver: generate N models/variants from a CSV / YAML spec (`daneel batch`)
+- [x] Deterministic output naming + a `manifest.json` of what was produced
 
 ### Phase 3 — Slicing automation
 - [ ] Headless slicing via **Bambu Studio / OrcaSlicer** CLI
@@ -71,8 +72,14 @@ cd daneel
 python -m venv .venv && source .venv/bin/activate
 pip install -e .
 
-# generate the example part as STL
-python -m daneel.parts.card --text "A-17" --out output/tag.stl
+# list available parts and their parameters
+daneel list
+
+# build a single model, overriding parameters
+daneel make box --set length=120 --set height=40 --out output/box.stl
+
+# build many models from a spec, with a manifest
+daneel batch examples/batch.example.yaml
 ```
 
 > **Note:** CadQuery pulls in the OCP (OpenCascade) geometry kernel, which is a large dependency.
@@ -91,7 +98,11 @@ python -m daneel.parts.card --text "A-17" --out output/tag.stl
 daneel/
 ├── src/daneel/
 │   ├── parts/          # parametric CadQuery part definitions
-│   │   └── card.py     # example part: a labelled tag
+│   │   ├── card.py     # labelled tag
+│   │   ├── box.py      # open-top box / container
+│   │   └── bracket.py  # L-bracket with mounting holes
+│   ├── registry.py     # name -> part lookup (daneel list)
+│   ├── batch.py        # CSV/YAML batch driver + manifest
 │   ├── export.py       # STL/STEP/3MF export
 │   ├── config.py       # printer/slicer configuration
 │   └── cli.py          # command-line entry point
