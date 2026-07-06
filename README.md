@@ -39,13 +39,20 @@ version-controllable, and batchable.
 - [x] Batch driver: generate N models/variants from a CSV / YAML spec (`daneel batch`)
 - [x] Deterministic output naming + a `manifest.json` of what was produced
 
-### Phase 3 — Slicing automation 🚧
-- [x] Headless slicing via **Bambu Studio / OrcaSlicer** CLI (`daneel slice`)
+### Phase 3 — Slicing automation ✅
+- [x] Headless slicing via the **OrcaSlicer** CLI (`daneel slice`)
 - [x] Profile-driven (machine / process / filament) via config
-- [x] Parse slicer estimates (print time + filament grams)
-- [x] `--dry-run` to inspect the exact command; produces `.3mf` / `.gcode`
-- [ ] **Validate flag surface against a real P1S** (flags vary by slicer version)
+- [x] Parse estimates (print time + filament grams) from the exported 3MF
+- [x] `--dry-run` to inspect the exact command; produces a printable `.3mf`
+- [x] **Validated end-to-end against OrcaSlicer 2.4.1 + real P1S profiles** (see notes below)
 - [ ] Per-part slicing overrides (layer height, infill, supports)
+
+**Validation notes (OrcaSlicer 2.4.1):** there is no `--export-gcode` (G-code is
+embedded in the 3MF, which is what the P1S prints); `--arrange 1 --slice 0` are
+required; estimates live in the 3MF at `Metadata/slice_info.config`, not stdout;
+and the P1S process presets are grouped under `@BBL X1C`. Headless machines run
+the AppImage via `xvfb-run … AppRun`. Real-slice validation also caught (and
+fixed) a bracket geometry bug where vertical-leg holes severed the leg.
 
 ### Phase 3.5 — Print log ✅
 - [x] Append-only JSONL log of every completed print (`daneel log add`)

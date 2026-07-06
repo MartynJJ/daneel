@@ -70,14 +70,16 @@ def build(params: BracketParams | None = None) -> cq.Workplane:
         )
         bracket = bracket.cut(cutter)
 
-    # Vertical-leg holes: drilled through Y, spaced along Z.
+    # Vertical-leg holes: drilled through the thickness (X), spaced along Z.
+    # (Must pierce the 4 mm thickness, not the width — otherwise a hole wider than
+    # the thickness severs the leg and leaves empty layers that won't slice.)
     for z in _linspace(p.thickness + p.hole_margin, p.leg_a - p.hole_margin, p.holes_per_leg):
         cutter = (
-            cq.Workplane("XY")
+            cq.Workplane("YZ")
+            .workplane(offset=-0.1)
+            .center(p.width / 2, z)
             .circle(r)
-            .extrude(p.width)
-            .rotate((0, 0, 0), (1, 0, 0), -90)  # reorient cylinder axis to +Y
-            .translate((p.thickness / 2, 0, z))
+            .extrude(p.thickness + 0.2)
         )
         bracket = bracket.cut(cutter)
 

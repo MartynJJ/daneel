@@ -1,32 +1,36 @@
-"""Slicer interface — turn an exported model into a printable file.
+"""Slicer interface — turn an exported model into a printable 3MF.
 
-Wraps the headless **Bambu Studio / OrcaSlicer** command-line tool (they share a
-CLI lineage). Given an STL/STEP and a set of profiles, it produces a `.3mf` or
-`.gcode` and parses the slicer's reported print-time and filament estimates.
+Wraps the headless **OrcaSlicer** (and compatible **Bambu Studio**) command-line
+tool. Given an STL/STEP and a set of profiles it arranges the model on the plate,
+slices it, and exports a `.3mf` that the P1S can print directly.
 
-    model.stl ──▶ [ slicer CLI: machine + process + filament profiles ] ──▶ model.3mf
+    model.stl ──▶ [ orca-slicer: machine + process + filament profiles ] ──▶ model.3mf
 
-⚠️  The exact CLI flags vary between Bambu Studio / OrcaSlicer versions. The flag
-    surface is deliberately isolated in :meth:`SlicerInterface.build_command` and
-    the estimate regexes in :func:`parse_estimates`, so they can be tuned against
-    the installed binary. Use ``daneel slice --dry-run`` to inspect the exact
-    command without executing it. Validate against a real P1S before trusting output.
+The command surface below was validated against **OrcaSlicer 2.4.1** on a real
+P1S profile set. Notes from that validation:
+
+* There is **no** ``--export-gcode`` flag; the sliced G-code is embedded in the
+  3MF (which is also what the printer consumes), so 3MF is the only export target.
+* ``--arrange 1 --slice 0`` are required (place on plate, slice all plates).
+* Print-time / filament estimates are **not** printed to stdout — they live inside
+  the 3MF at ``Metadata/slice_info.config`` (``prediction`` seconds, filament
+  ``used_g`` grams). :func:`read_3mf_estimates` reads them back.
+* The process profile must list the target printer in its ``compatible_printers``.
+  For the P1S that is the ``@BBL X1C`` process presets (Bambu groups them there).
+
+Use ``daneel slice --dry-run`` to inspect the exact command without executing.
 """
 
 from __future__ import annotations
 
-import re
 import shutil
 import subprocess
+import xml.etree.ElementTree as ET
+import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 
 from daneel.config import SlicerConfig
-
-# export format -> slicer CLI flag
-_FORMATS = {"3mf": "--export-3mf", "gcode": "--export-gcode"}
-
-_TIME_UNITS = {"d": 1440.0, "h": 60.0, "m": 1.0, "s": 1 / 60}
 
 
 class SlicerError(RuntimeError):
@@ -42,26 +46,45 @@ class SliceResult:
     stdout: str
 
 
-def parse_estimates(text: str) -> tuple[float | None, float | None]:
-    """Extract (duration_minutes, filament_grams) from slicer output. Best-effort."""
-    duration = None
-    time_match = re.search(r"(?:printing|print|estimated)\s*time[^=:\n]*[=:]\s*([0-9dhms :]+)", text, re.I)
-    if time_match:
-        total = sum(
-            int(value) * _TIME_UNITS[unit]
-            for value, unit in re.findall(r"(\d+)\s*([dhms])", time_match.group(1))
-        )
-        duration = round(total, 2) or None
+def read_3mf_estimates(path: str | Path) -> tuple[float | None, float | None]:
+    """Read (duration_minutes, filament_grams) from a sliced 3MF. Best-effort.
 
-    grams = None
-    grams_match = re.search(r"filament used[^=:\n]*\[?g\]?[^=:\n]*[=:]\s*([\d.]+)", text, re.I)
-    if grams_match:
-        grams = float(grams_match.group(1))
-    return duration, grams
+    Estimates live in ``Metadata/slice_info.config``: per-plate ``prediction``
+    (seconds) and per-filament ``used_g`` (grams). Grams can be 0 when the
+    filament profile lacks a density; that is reported as ``None``.
+    """
+    with zipfile.ZipFile(path) as archive:
+        name = next((n for n in archive.namelist() if n.lower().endswith("slice_info.config")), None)
+        if name is None:
+            return None, None
+        root = ET.fromstring(archive.read(name))
+
+    duration: float | None = None
+    grams = 0.0
+    saw_grams = False
+    for plate in root.iterfind("plate"):
+        for meta in plate.iterfind("metadata"):
+            if meta.get("key") == "prediction" and meta.get("value"):
+                try:
+                    duration = (duration or 0.0) + float(meta.get("value")) / 60
+                except ValueError:
+                    pass
+        for filament in plate.iterfind("filament"):
+            used_g = filament.get("used_g")
+            if used_g:
+                try:
+                    grams += float(used_g)
+                    saw_grams = True
+                except ValueError:
+                    pass
+    return (
+        round(duration, 1) if duration else None,
+        round(grams, 2) if saw_grams and grams > 0 else None,
+    )
 
 
 class SlicerInterface:
-    """Thin wrapper around the headless slicer binary."""
+    """Thin wrapper around the headless OrcaSlicer / Bambu Studio binary."""
 
     def __init__(self, config: SlicerConfig | None = None) -> None:
         self.config = config or SlicerConfig()
@@ -72,23 +95,24 @@ class SlicerInterface:
         if not path:
             raise SlicerError(
                 f"slicer binary {self.config.binary!r} not found on PATH; "
-                "install Bambu Studio / OrcaSlicer or set slicer.binary in config"
+                "install OrcaSlicer / Bambu Studio or set slicer.binary in config"
             )
         return path
 
     def build_command(self, input_path: Path, output_path: Path) -> list[str]:
         """Construct the slicer argv. This is the version-sensitive surface."""
-        fmt = self.config.export_format.lower()
-        if fmt not in _FORMATS:
-            raise ValueError(f"unsupported export_format {fmt!r}; use one of {sorted(_FORMATS)}")
-
+        if self.config.export_format.lower() != "3mf":
+            raise ValueError(
+                "the OrcaSlicer CLI exports print estimates only via 3MF "
+                "(no --export-gcode); set slicer.export_format = '3mf'"
+            )
         settings = [p for p in (self.config.machine_profile, self.config.process_profile) if p]
         cmd = [self.config.binary]
         if settings:
             cmd += ["--load-settings", ";".join(settings)]
         if self.config.filament_profile:
             cmd += ["--load-filaments", self.config.filament_profile]
-        cmd += ["--slice", "0", _FORMATS[fmt], str(output_path), str(input_path)]
+        cmd += ["--arrange", "1", "--slice", "0", "--export-3mf", str(output_path), str(input_path)]
         return cmd
 
     def slice(
@@ -97,10 +121,9 @@ class SlicerInterface:
         output_path: str | Path | None = None,
         dry_run: bool = False,
     ) -> SliceResult:
-        """Slice `input_path`. With `dry_run`, build the command but don't execute."""
+        """Slice `input_path` to a 3MF. With `dry_run`, build the command but don't run it."""
         input_path = Path(input_path)
-        fmt = self.config.export_format.lower()
-        out = Path(output_path) if output_path else input_path.with_suffix(f".{fmt}")
+        out = Path(output_path) if output_path else input_path.with_suffix(".3mf")
         command = self.build_command(input_path, out)
 
         if dry_run:
@@ -112,8 +135,9 @@ class SlicerInterface:
         out.parent.mkdir(parents=True, exist_ok=True)
 
         proc = subprocess.run(command, capture_output=True, text=True)
-        if proc.returncode != 0:
-            raise SlicerError(f"slicer exited {proc.returncode}:\n{proc.stderr.strip()}")
+        if proc.returncode != 0 or not out.exists():
+            tail = "\n".join(proc.stdout.strip().splitlines()[-8:])
+            raise SlicerError(f"slicer exited {proc.returncode}; last output:\n{tail}")
 
-        duration, grams = parse_estimates(proc.stdout)
+        duration, grams = read_3mf_estimates(out)
         return SliceResult(out, command, duration, grams, proc.stdout)
