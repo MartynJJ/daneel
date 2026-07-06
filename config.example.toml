@@ -7,7 +7,10 @@ serial = "01PXXXXXXXXXXXX"    # from printer: Settings > Device
 access_code = "12345678"     # LAN mode access code on the printer screen
 
 [slicer]
-binary = "bambu-studio"
-machine_profile = "Bambu Lab P1S 0.4 nozzle"
-filament_profile = "Bambu PLA Basic"
+binary = "bambu-studio"      # or "orca-slicer" — must be on PATH
+# Profiles are exported JSON files (GUI: right-click a preset > Export).
+machine_profile = "/home/martyn/.config/daneel/profiles/p1s_machine.json"
+process_profile = "/home/martyn/.config/daneel/profiles/0.20mm_standard.json"
+filament_profile = "/home/martyn/.config/daneel/profiles/pla_basic.json"
+export_format = "3mf"        # "3mf" or "gcode"
 layer_height = 0.2

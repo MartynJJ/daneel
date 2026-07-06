@@ -39,11 +39,13 @@ version-controllable, and batchable.
 - [x] Batch driver: generate N models/variants from a CSV / YAML spec (`daneel batch`)
 - [x] Deterministic output naming + a `manifest.json` of what was produced
 
-### Phase 3 — Slicing automation
-- [ ] Headless slicing via **Bambu Studio / OrcaSlicer** CLI
-- [ ] P1S machine + filament profiles checked into the repo
+### Phase 3 — Slicing automation 🚧
+- [x] Headless slicing via **Bambu Studio / OrcaSlicer** CLI (`daneel slice`)
+- [x] Profile-driven (machine / process / filament) via config
+- [x] Parse slicer estimates (print time + filament grams)
+- [x] `--dry-run` to inspect the exact command; produces `.3mf` / `.gcode`
+- [ ] **Validate flag surface against a real P1S** (flags vary by slicer version)
 - [ ] Per-part slicing overrides (layer height, infill, supports)
-- [ ] Produce ready-to-print `.3mf` / `.gcode`
 
 ### Phase 3.5 — Print log ✅
 - [x] Append-only JSONL log of every completed print (`daneel log add`)
@@ -88,6 +90,10 @@ daneel make box --set length=120 --set height=40 --out output/box.stl
 # build many models from a spec, with a manifest
 daneel batch examples/batch.example.yaml
 
+# slice a model for the P1S (see the command first with --dry-run)
+daneel slice output/bracket.stl --dry-run
+daneel slice output/bracket.stl -o output/bracket.3mf
+
 # log a finished print and review progress
 daneel log add "desk hook v2" --part bracket --filament "PLA Basic" --grams 14 --minutes 52
 daneel log list
@@ -116,6 +122,7 @@ daneel/
 │   ├── registry.py     # name -> part lookup (daneel list)
 │   ├── batch.py        # CSV/YAML batch driver + manifest
 │   ├── printlog.py     # append-only print history (daneel log)
+│   ├── slice.py        # headless slicer wrapper (daneel slice)
 │   ├── export.py       # STL/STEP/3MF export
 │   ├── config.py       # printer/slicer configuration
 │   └── cli.py          # command-line entry point

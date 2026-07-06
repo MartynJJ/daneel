@@ -30,11 +30,18 @@ class PrinterConfig(BaseModel):
 
 
 class SlicerConfig(BaseModel):
-    """Headless slicer settings."""
+    """Headless slicer settings.
+
+    The `*_profile` fields are paths to exported Bambu Studio / OrcaSlicer JSON
+    profiles (export them once from the GUI: right-click a preset > Export). The
+    slicer CLI is driven by these files rather than by preset display names.
+    """
 
     binary: str = "bambu-studio"  # or "orca-slicer"
-    machine_profile: str = "Bambu Lab P1S 0.4 nozzle"
-    filament_profile: str = "Bambu PLA Basic"
+    machine_profile: str | None = None  # path to machine settings .json
+    process_profile: str | None = None  # path to process/quality settings .json
+    filament_profile: str | None = None  # path to filament settings .json
+    export_format: str = "3mf"  # "3mf" or "gcode"
     layer_height: float = 0.2
 
 

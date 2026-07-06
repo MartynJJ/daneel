@@ -131,10 +131,30 @@ def log_stats() -> None:
 
 
 @app.command()
-def slice() -> None:  # noqa: A001 - matches user-facing verb
-    """[Phase 3] Slice an exported model with Bambu Studio / OrcaSlicer CLI."""
-    typer.echo("not implemented yet — see roadmap (Phase 3).")
-    raise typer.Exit(code=1)
+def slice(  # noqa: A001 - matches user-facing verb
+    model: Path = typer.Argument(..., help="Input model (.stl/.step)."),
+    out: Path = typer.Option(None, "--out", "-o", help="Output .3mf/.gcode (default: alongside input)."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Print the slicer command without running it."),
+) -> None:
+    """Slice a model with the configured Bambu Studio / OrcaSlicer binary."""
+    from daneel.config import load
+    from daneel.slice import SlicerError, SlicerInterface
+
+    iface = SlicerInterface(load().slicer)
+    try:
+        result = iface.slice(model, out, dry_run=dry_run)
+    except SlicerError as exc:
+        typer.echo(str(exc))
+        raise typer.Exit(code=1) from exc
+
+    if dry_run:
+        typer.echo(" ".join(result.command))
+        return
+    typer.echo(f"sliced -> {result.output}")
+    if result.duration_min is not None:
+        typer.echo(f"  est. time: {result.duration_min:.0f} min")
+    if result.grams is not None:
+        typer.echo(f"  filament:  {result.grams:.1f} g")
 
 
 @app.command(name="print")
