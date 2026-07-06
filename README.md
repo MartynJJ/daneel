@@ -1,24 +1,24 @@
 # Daneel
 
-> *"A robot may not injure a human being... but it may absolutely print them a nice parametric tray."*
+> *"A robot may not injure a human being... but it may absolutely print them a nice parametric bracket."*
 
 Named after R. Daneel Olivaw — Asimov's tireless, meticulous humaniform robot — **Daneel** is a
-Python toolkit that automates the full pipeline from parametric CAD to a finished print on a
+Python toolkit that automates the full pipeline from **parametric CAD** to a finished print on a
 **Bambu Lab P1S**:
 
 ```
 parameters ──▶ CadQuery model ──▶ STL/STEP ──▶ slice (3MF/G-code) ──▶ send to P1S ──▶ print
 ```
 
-The goal: define a part once as code, then batch-generate variants ("cards", tags, labels,
-inserts, organizers) and get them onto the printer with a single command — no manual clicking
-through the modeller or slicer.
+The goal: define a part once as code, then generate CAD models (and variants of them) and get them
+onto the printer with a single command — no manual clicking through the modeller or slicer.
 
 ## Why
 
-Designing repetitive parts by hand is slow and error-prone. Daneel treats parts as **parametric
-functions**: give it dimensions/text/quantity and it produces geometry, slices it with sane P1S
-profiles, and dispatches the job over the network.
+Designing parts by hand in a GUI is slow and hard to reproduce. Daneel treats CAD as **code**: each
+part is a parametric function that takes dimensions/options and returns geometry. From there Daneel
+exports it, slices it with sane P1S profiles, and dispatches the job over the network — scriptable,
+version-controllable, and batchable.
 
 ## Status
 
@@ -27,15 +27,15 @@ profiles, and dispatches the job over the network.
 ## Features (roadmap)
 
 ### Phase 1 — Parametric part library ✅ (scaffolded)
-- [x] CadQuery-based part definitions (`src/daneel/parts/`)
-- [x] Example: parametric **card / label tag** with embossed text
+- [x] CadQuery-based part definitions (`src/daneel/parts/`) — each is a `build(params)` function
+- [x] Example part: a labelled tag with embossed text + hole (demonstrates the pattern)
+- [ ] More stock parts: boxes, brackets, spacers, cable clips, drawer inserts, hooks
 - [ ] Gridfinity-compatible bins & baseplates
-- [ ] Cable clips, drawer inserts, hooks (common household parts)
 - [ ] Parameter validation + sensible defaults per part
 
 ### Phase 2 — Export & batch generation
 - [ ] Export to STL / STEP / 3MF from a single call
-- [ ] Batch driver: generate N variants from a CSV / YAML spec
+- [ ] Batch driver: generate N models/variants from a CSV / YAML spec
 - [ ] Deterministic output naming + a manifest of what was produced
 
 ### Phase 3 — Slicing automation
@@ -45,16 +45,22 @@ profiles, and dispatches the job over the network.
 - [ ] Produce ready-to-print `.3mf` / `.gcode`
 
 ### Phase 4 — Printer dispatch
-- [ ] Send jobs to the P1S over the network (MQTT / LAN mode via [`bambulabs-api`] or `pybambu`)
+- [ ] Send jobs to the P1S over the network (MQTT / LAN mode via [`bambulabs-api`])
 - [ ] Query printer state (idle / printing / error, temps, progress)
 - [ ] AMS filament awareness — pick the right slot
 - [ ] Print queue: enqueue a batch, print sequentially
 
 ### Phase 5 — Ergonomics
-- [ ] `daneel` CLI (`daneel make card --text "A-17" --qty 4 --print`)
+- [ ] `daneel` CLI (`daneel make <part> --print`)
 - [ ] Config file for printer IP / access code / serial
 - [ ] Optional web UI for triggering parametric prints
 - [ ] Preview renders (PNG) before committing to a print
+
+## Adding a part
+
+A part is just a module in `src/daneel/parts/` exposing a `build(params)` that returns a CadQuery
+`Workplane`. The included `card.py` (a labelled tag) is the reference example — copy it as a
+template for boxes, brackets, or whatever you need next.
 
 ## Quick start
 
@@ -65,8 +71,8 @@ cd daneel
 python -m venv .venv && source .venv/bin/activate
 pip install -e .
 
-# generate an example card as STL
-python -m daneel.parts.card --text "A-17" --out output/card.stl
+# generate the example part as STL
+python -m daneel.parts.card --text "A-17" --out output/tag.stl
 ```
 
 > **Note:** CadQuery pulls in the OCP (OpenCascade) geometry kernel, which is a large dependency.
@@ -85,10 +91,11 @@ python -m daneel.parts.card --text "A-17" --out output/card.stl
 daneel/
 ├── src/daneel/
 │   ├── parts/          # parametric CadQuery part definitions
-│   │   └── card.py     # example: labelled card/tag
+│   │   └── card.py     # example part: a labelled tag
+│   ├── export.py       # STL/STEP/3MF export
 │   ├── config.py       # printer/slicer configuration
-│   └── cli.py          # command-line entry point (stub)
-├── examples/           # example specs (CSV/YAML batches)
+│   └── cli.py          # command-line entry point
+├── examples/           # example batch specs (CSV/YAML)
 ├── output/             # generated artifacts (git-ignored)
 └── pyproject.toml
 ```
