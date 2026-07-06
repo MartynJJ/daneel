@@ -45,11 +45,18 @@ version-controllable, and batchable.
 - [ ] Per-part slicing overrides (layer height, infill, supports)
 - [ ] Produce ready-to-print `.3mf` / `.gcode`
 
+### Phase 3.5 — Print log ✅
+- [x] Append-only JSONL log of every completed print (`daneel log add`)
+- [x] List and filter history (`daneel log list`)
+- [x] Aggregate stats: count, success rate, filament used, print hours (`daneel log stats`)
+- [ ] Auto-append from printer telemetry (arrives with Phase 4)
+
 ### Phase 4 — Printer dispatch
 - [ ] Send jobs to the P1S over the network (MQTT / LAN mode via [`bambulabs-api`])
 - [ ] Query printer state (idle / printing / error, temps, progress)
 - [ ] AMS filament awareness — pick the right slot
 - [ ] Print queue: enqueue a batch, print sequentially
+- [ ] Auto-log each finished print into the print log
 
 ### Phase 5 — Ergonomics
 - [ ] `daneel` CLI (`daneel make <part> --print`)
@@ -80,6 +87,11 @@ daneel make box --set length=120 --set height=40 --out output/box.stl
 
 # build many models from a spec, with a manifest
 daneel batch examples/batch.example.yaml
+
+# log a finished print and review progress
+daneel log add "desk hook v2" --part bracket --filament "PLA Basic" --grams 14 --minutes 52
+daneel log list
+daneel log stats
 ```
 
 > **Note:** CadQuery pulls in the OCP (OpenCascade) geometry kernel, which is a large dependency.
@@ -103,6 +115,7 @@ daneel/
 │   │   └── bracket.py  # L-bracket with mounting holes
 │   ├── registry.py     # name -> part lookup (daneel list)
 │   ├── batch.py        # CSV/YAML batch driver + manifest
+│   ├── printlog.py     # append-only print history (daneel log)
 │   ├── export.py       # STL/STEP/3MF export
 │   ├── config.py       # printer/slicer configuration
 │   └── cli.py          # command-line entry point

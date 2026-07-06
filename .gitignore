@@ -18,6 +18,10 @@ output/
 *.3mf
 *.gcode
 
+# Print log (personal history; default lives under ~/.local/share/daneel)
+logs/
+*.jsonl
+
 # Credentials — never commit printer access codes
 config.toml
 .env

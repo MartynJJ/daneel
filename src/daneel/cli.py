@@ -18,8 +18,12 @@ import typer
 from daneel import batch as batchmod
 from daneel import registry
 from daneel.export import export
+from daneel.printlog import PrintLog
 
 app = typer.Typer(help="Parametric CAD-to-print automation for the Bambu P1S.", no_args_is_help=True)
+
+log_app = typer.Typer(help="Track completed prints.", no_args_is_help=True)
+app.add_typer(log_app, name="log")
 
 
 @app.command(name="list")
@@ -62,6 +66,68 @@ def batch(
     """Build many models from a spec file, writing a manifest.json."""
     manifest = batchmod.run(spec, outdir, fmt, default_part=part)
     typer.echo(f"generated {len(manifest)} model(s) -> {outdir}/manifest.json")
+
+
+@log_app.command("add")
+def log_add(
+    label: str = typer.Argument(None, help="Human description of the print."),
+    part: str = typer.Option(None, "--part", help="Registry part name, if applicable."),
+    file: str = typer.Option(None, "--file", help="Source model / sliced file."),
+    filament: str = typer.Option(None, "--filament", help='e.g. "PLA Basic".'),
+    color: str = typer.Option(None, "--color"),
+    grams: float = typer.Option(None, "--grams", help="Filament used."),
+    minutes: float = typer.Option(None, "--minutes", help="Print duration."),
+    status: str = typer.Option("success", "--status", help="success|failed|aborted|in_progress."),
+    rating: int = typer.Option(None, "--rating", help="Subjective 1-5."),
+    notes: str = typer.Option(None, "--notes"),
+) -> None:
+    """Record a completed print."""
+    try:
+        record = PrintLog().add(
+            label=label, part=part, file=file, filament=filament, color=color,
+            grams=grams, duration_min=minutes, status=status, rating=rating, notes=notes,
+        )
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    typer.echo(f"logged {record.id} [{record.status}] {record.label or record.part or ''}")
+
+
+@log_app.command("list")
+def log_list(
+    limit: int = typer.Option(20, "--limit", "-n", help="Show the most recent N."),
+    status: str = typer.Option(None, "--status", help="Filter by status."),
+) -> None:
+    """List logged prints, most recent last."""
+    records = PrintLog().records()
+    if status:
+        records = [r for r in records if r.status == status]
+    if not records:
+        typer.echo("no prints logged yet.")
+        return
+    for r in records[-limit:]:
+        date = r.timestamp[:10]
+        grams = f"{r.grams:.0f}g" if r.grams else "-"
+        mins = f"{r.duration_min:.0f}m" if r.duration_min else "-"
+        typer.echo(
+            f"{r.id}  {date}  {r.status:11}  {grams:>6}  {mins:>5}  "
+            f"{r.label or r.part or ''}"
+        )
+
+
+@log_app.command("stats")
+def log_stats() -> None:
+    """Show aggregate print statistics."""
+    s = PrintLog().summary()
+    if s["total"] == 0:
+        typer.echo("no prints logged yet.")
+        return
+    rate = f"{s['success_rate'] * 100:.0f}%" if s["success_rate"] is not None else "n/a"
+    typer.echo(f"prints:        {s['total']}")
+    typer.echo(f"success rate:  {rate}")
+    typer.echo(f"filament used: {s['total_grams']:.0f} g")
+    typer.echo(f"print time:    {s['total_hours']:.1f} h")
+    typer.echo("by status:     " + ", ".join(f"{k}={v}" for k, v in sorted(s["by_status"].items())))
+    typer.echo("by part:       " + ", ".join(f"{k}={v}" for k, v in sorted(s["by_part"].items())))
 
 
 @app.command()
