@@ -23,6 +23,7 @@ Use ``daneel slice --dry-run`` to inspect the exact command without executing.
 
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
 import xml.etree.ElementTree as ET
@@ -50,8 +51,12 @@ def read_3mf_estimates(path: str | Path) -> tuple[float | None, float | None]:
     """Read (duration_minutes, filament_grams) from a sliced 3MF. Best-effort.
 
     Estimates live in ``Metadata/slice_info.config``: per-plate ``prediction``
-    (seconds) and per-filament ``used_g`` (grams). Grams can be 0 when the
-    filament profile lacks a density; that is reported as ``None``.
+    (seconds) and per-filament ``used_g`` (grams). The headless CLI leaves
+    ``used_g`` at 0 for *system* profiles (it doesn't resolve their inherited
+    density), so as a fallback grams is computed from the embedded G-code header
+    (``filament used [cm3]`` × ``filament_density``). Grams is ``None`` when
+    neither source yields a positive value — use a flattened/exported filament
+    profile (density baked in) if you need weight.
     """
     with zipfile.ZipFile(path) as archive:
         name = next((n for n in archive.namelist() if n.lower().endswith("slice_info.config")), None)
@@ -59,28 +64,46 @@ def read_3mf_estimates(path: str | Path) -> tuple[float | None, float | None]:
             return None, None
         root = ET.fromstring(archive.read(name))
 
-    duration: float | None = None
-    grams = 0.0
-    saw_grams = False
-    for plate in root.iterfind("plate"):
-        for meta in plate.iterfind("metadata"):
-            if meta.get("key") == "prediction" and meta.get("value"):
+        duration: float | None = None
+        grams = 0.0
+        for plate in root.iterfind("plate"):
+            for meta in plate.iterfind("metadata"):
+                if meta.get("key") == "prediction" and meta.get("value"):
+                    try:
+                        duration = (duration or 0.0) + float(meta.get("value")) / 60
+                    except ValueError:
+                        pass
+            for filament in plate.iterfind("filament"):
                 try:
-                    duration = (duration or 0.0) + float(meta.get("value")) / 60
+                    grams += float(filament.get("used_g") or 0)
                 except ValueError:
                     pass
-        for filament in plate.iterfind("filament"):
-            used_g = filament.get("used_g")
-            if used_g:
-                try:
-                    grams += float(used_g)
-                    saw_grams = True
-                except ValueError:
-                    pass
+
+        if grams <= 0:
+            grams = _grams_from_gcode(archive) or 0.0
+
     return (
         round(duration, 1) if duration else None,
-        round(grams, 2) if saw_grams and grams > 0 else None,
+        round(grams, 2) if grams > 0 else None,
     )
+
+
+def _grams_from_gcode(archive: zipfile.ZipFile) -> float | None:
+    """Fallback: grams = filament volume (cm3) × density, read from the G-code header."""
+    name = next((n for n in archive.namelist() if n.lower().endswith(".gcode")), None)
+    if name is None:
+        return None
+    text = archive.read(name).decode("utf-8", "replace")
+
+    def _find(pattern: str) -> float | None:
+        match = re.search(pattern, text, re.I)
+        return float(match.group(1)) if match else None
+
+    cm3 = _find(r"filament used \[cm3\]\s*=\s*([\d.]+)")
+    density = _find(r"filament_density\s*[:=]\s*([\d.]+)")
+    if cm3 and density and density > 0:
+        return cm3 * density
+    return None
 
 
 class SlicerInterface:

@@ -21,9 +21,11 @@ _SLICE_INFO = """<?xml version="1.0"?>
 </config>"""
 
 
-def _make_3mf(path, prediction="1795", grams="12.34"):
+def _make_3mf(path, prediction="1795", grams="12.34", gcode=None):
     with zipfile.ZipFile(path, "w") as z:
         z.writestr("Metadata/slice_info.config", _SLICE_INFO.format(prediction=prediction, grams=grams))
+        if gcode is not None:
+            z.writestr("Metadata/plate_1.gcode", gcode)
     return path
 
 
@@ -73,8 +75,16 @@ def test_read_3mf_estimates(tmp_path):
 
 
 def test_read_3mf_estimates_zero_grams(tmp_path):
-    # Filament profile without a density reports used_g=0 -> grams is None.
+    # System profile: used_g=0 and no gcode density -> grams is None.
     path = _make_3mf(tmp_path / "m.3mf", prediction="600", grams="0.00")
     duration, grams = read_3mf_estimates(path)
     assert duration == pytest.approx(10.0)
     assert grams is None
+
+
+def test_read_3mf_estimates_grams_from_gcode_fallback(tmp_path):
+    # used_g=0 but the gcode header carries volume + density -> compute grams.
+    gcode = "; filament used [cm3] = 5.54\n; filament_density = 1.24\nG1 X0\n"
+    path = _make_3mf(tmp_path / "m.3mf", prediction="600", grams="0.00", gcode=gcode)
+    _, grams = read_3mf_estimates(path)
+    assert grams == pytest.approx(5.54 * 1.24, abs=0.01)
