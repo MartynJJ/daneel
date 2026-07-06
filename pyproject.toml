@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "daneel"
+version = "0.1.0"
+description = "Parametric CAD-to-print automation for the Bambu Lab P1S, powered by CadQuery."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Martyn Jepson" }]
+keywords = ["cadquery", "3d-printing", "bambu", "p1s", "parametric", "cad", "automation"]
+
+dependencies = [
+    "cadquery>=2.4",
+    "typer>=0.12",       # CLI
+    "pydantic>=2",       # config / part parameter models
+    "tomli>=2 ; python_version < '3.11'",
+]
+
+[project.optional-dependencies]
+# Printer control + slicing automation (Phase 3/4). Optional so the core CAD
+# library installs without pulling networking deps.
+printer = ["bambulabs-api>=2.0", "paho-mqtt>=2"]
+dev = ["pytest>=8", "ruff>=0.5", "mypy>=1.10"]
+
+[project.scripts]
+daneel = "daneel.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/MartynJJ/daneel"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+src = ["src"]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true

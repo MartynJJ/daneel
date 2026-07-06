@@ -1,0 +1,13 @@
+# Copy to ~/.config/daneel/config.toml (or set $DANEEL_CONFIG) and fill in.
+# This file is safe to commit; config.toml is git-ignored.
+
+[printer]
+ip = "192.168.1.50"          # P1S LAN IP
+serial = "01PXXXXXXXXXXXX"    # from printer: Settings > Device
+access_code = "12345678"     # LAN mode access code on the printer screen
+
+[slicer]
+binary = "bambu-studio"
+machine_profile = "Bambu Lab P1S 0.4 nozzle"
+filament_profile = "Bambu PLA Basic"
+layer_height = 0.2

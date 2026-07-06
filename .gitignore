@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Generated artifacts
+output/
+*.stl
+*.step
+*.stp
+*.3mf
+*.gcode
+
+# Credentials — never commit printer access codes
+config.toml
+.env
+*.secret
+
+# Editor
+.vscode/
+*.swp
