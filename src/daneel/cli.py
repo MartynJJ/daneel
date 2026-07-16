@@ -20,7 +20,9 @@ from daneel import registry
 from daneel.export import export
 from daneel.printlog import PrintLog
 
-app = typer.Typer(help="Parametric CAD-to-print automation for the Bambu P1S.", no_args_is_help=True)
+app = typer.Typer(
+    help="Parametric CAD-to-print automation for the Bambu P1S.", no_args_is_help=True
+)
 
 log_app = typer.Typer(help="Track completed prints.", no_args_is_help=True)
 app.add_typer(log_app, name="log")
@@ -52,8 +54,13 @@ def make(
         if key not in field_types:
             raise typer.BadParameter(f"part {part!r} has no parameter {key!r}")
         kwargs[key] = batchmod.coerce(field_types[key], value)
-    written = export(build(params_cls(**kwargs)), out or f"output/{part}.stl")
+    params = params_cls(**kwargs)
+    written = export(build(params), out or f"output/{part}.stl")
     typer.echo(f"wrote {written}")
+    make_companions = registry.companions(part)
+    if make_companions:
+        for extra in make_companions(params, written) or []:
+            typer.echo(f"wrote {extra}")
 
 
 @app.command()
@@ -84,8 +91,16 @@ def log_add(
     """Record a completed print."""
     try:
         record = PrintLog().add(
-            label=label, part=part, file=file, filament=filament, color=color,
-            grams=grams, duration_min=minutes, status=status, rating=rating, notes=notes,
+            label=label,
+            part=part,
+            file=file,
+            filament=filament,
+            color=color,
+            grams=grams,
+            duration_min=minutes,
+            status=status,
+            rating=rating,
+            notes=notes,
         )
     except ValueError as exc:
         raise typer.BadParameter(str(exc)) from exc
@@ -109,8 +124,7 @@ def log_list(
         grams = f"{r.grams:.0f}g" if r.grams else "-"
         mins = f"{r.duration_min:.0f}m" if r.duration_min else "-"
         typer.echo(
-            f"{r.id}  {date}  {r.status:11}  {grams:>6}  {mins:>5}  "
-            f"{r.label or r.part or ''}"
+            f"{r.id}  {date}  {r.status:11}  {grams:>6}  {mins:>5}  {r.label or r.part or ''}"
         )
 
 
@@ -133,8 +147,12 @@ def log_stats() -> None:
 @app.command()
 def slice(  # noqa: A001 - matches user-facing verb
     model: Path = typer.Argument(..., help="Input model (.stl/.step)."),
-    out: Path = typer.Option(None, "--out", "-o", help="Output .3mf/.gcode (default: alongside input)."),
-    dry_run: bool = typer.Option(False, "--dry-run", help="Print the slicer command without running it."),
+    out: Path = typer.Option(
+        None, "--out", "-o", help="Output .3mf/.gcode (default: alongside input)."
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Print the slicer command without running it."
+    ),
 ) -> None:
     """Slice a model with the configured Bambu Studio / OrcaSlicer binary."""
     from daneel.config import load
