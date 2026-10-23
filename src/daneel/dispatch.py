@@ -137,6 +137,55 @@ def upload_file(config: PrinterConfig, path: Path) -> str:
     return path.name
 
 
+@dataclass
+class RemoteFile:
+    name: str
+    size: int
+    modified: str  # printer-local, as listed (no year for recent files)
+
+
+def _parse_listing(lines: list[str]) -> list[RemoteFile]:
+    """Parse FTP ``ls -l`` lines, keeping plain files (job files) and skipping directories."""
+    out = []
+    for line in lines:
+        parts = line.split(None, 8)
+        if len(parts) < 9 or parts[0].startswith("d"):
+            continue
+        try:
+            size = int(parts[4])
+        except ValueError:
+            continue
+        out.append(RemoteFile(parts[8], size, " ".join(parts[5:8])))
+    return out
+
+
+def _printer(config: PrinterConfig):  # noqa: ANN202 - library type is optional
+    try:
+        from bambulabs_api import Printer
+    except ImportError as exc:
+        raise DispatchError('bambulabs-api missing: pip install -e ".[printer]"') from exc
+    return Printer(config.ip, config.access_code, config.serial)
+
+
+def list_files(config: PrinterConfig) -> list[RemoteFile]:
+    """Job files on the printer's storage (FTPS only; works with LAN Only Mode off)."""
+    try:
+        _, lines = _printer(config).ftp_client.list_directory()
+    except Exception as exc:  # bambulabs-api wraps FTP errors in bare Exception
+        raise DispatchError(f"listing failed: {exc}") from exc
+    return _parse_listing(lines)
+
+
+def delete_file(config: PrinterConfig, name: str) -> None:
+    """Delete one file from the printer's storage."""
+    try:
+        reply = _printer(config).delete_file(name)
+    except Exception as exc:
+        raise DispatchError(f"delete failed: {exc}") from exc
+    if not reply or not reply.startswith("250"):
+        raise DispatchError(f"delete failed: {reply!r}")
+
+
 def watch(
     session: P1S,
     path: Path,

@@ -121,6 +121,10 @@ daneel pause
 daneel resume
 daneel stop
 
+# manage job files on the printer's storage (FTPS only)
+daneel files list
+daneel files rm calib_cube_20.3mf
+
 # the CLI doesn't resolve preset inheritance, so system filament presets slice as 0 g (and with
 # root-default cooling values). Flatten one once, then point slicer.filament_profile at it
 daneel profile flatten "/opt/orca/resources/profiles/BBL/filament/Generic PLA High Speed @BBL P1P.json" \

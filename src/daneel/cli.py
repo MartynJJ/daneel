@@ -234,6 +234,55 @@ def stop(yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation.
     _control("stop")
 
 
+files_app = typer.Typer(help="Job files on the printer's storage (FTPS).", no_args_is_help=True)
+app.add_typer(files_app, name="files")
+
+
+def _printer_cfg():  # noqa: ANN202
+    from daneel.config import load
+
+    cfg = load().printer
+    if cfg is None:
+        raise typer.BadParameter("no [printer] section in config")
+    return cfg
+
+
+@files_app.command("list")
+def files_list() -> None:
+    """List job files stored on the printer."""
+    from daneel.dispatch import DispatchError, list_files
+
+    try:
+        files = list_files(_printer_cfg())
+    except DispatchError as exc:
+        typer.echo(str(exc))
+        raise typer.Exit(code=1) from exc
+    if not files:
+        typer.echo("no files on the printer.")
+    for f in files:
+        typer.echo(f"{f.size / 1024:8.0f} KB  {f.modified:12}  {f.name}")
+
+
+@files_app.command("rm")
+def files_rm(
+    names: list[str] = typer.Argument(..., help="File name(s) as shown by `files list`."),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation."),
+) -> None:
+    """Delete job files from the printer."""
+    from daneel.dispatch import DispatchError, delete_file
+
+    cfg = _printer_cfg()
+    if not yes and not typer.confirm(f"Delete {', '.join(names)} from the printer?"):
+        raise typer.Exit(code=1)
+    for name in names:
+        try:
+            delete_file(cfg, name)
+        except DispatchError as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(code=1) from exc
+        typer.echo(f"deleted {name}")
+
+
 profile_app = typer.Typer(help="Slicer preset helpers.", no_args_is_help=True)
 app.add_typer(profile_app, name="profile")
 

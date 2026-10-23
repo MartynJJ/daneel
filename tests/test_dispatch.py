@@ -85,3 +85,13 @@ def test_hms_code_format():
         "0500-0500-0001-0007"
     ]
     assert dispatch._hms_codes(None) == []
+
+
+def test_parse_listing_skips_dirs_and_keeps_spaces():
+    lines = [
+        "drw-rw-rw-   1 root  root         0 Jan 01 1980 logger",
+        "-rw-rw-rw-   1 root  root     93148 Oct 23 12:58 my cube.3mf",
+        "garbage",
+    ]
+    files = dispatch._parse_listing(lines)
+    assert [(f.name, f.size, f.modified) for f in files] == [("my cube.3mf", 93148, "Oct 23 12:58")]
