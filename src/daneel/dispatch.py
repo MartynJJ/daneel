@@ -128,7 +128,9 @@ def upload_file(config: PrinterConfig, path: Path) -> str:
     try:
         with path.open("rb") as fh:
             reply = Printer(config.ip, config.access_code, config.serial).upload_file(fh, path.name)
-    except OSError as exc:
+    except (
+        Exception
+    ) as exc:  # bambulabs-api wraps FTP errors (e.g. 530 bad access code) in bare Exception
         raise DispatchError(f"upload failed: {exc}") from exc
     if not reply or "226" not in reply:
         raise DispatchError(f"upload failed: {reply!r}")
