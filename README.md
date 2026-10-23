@@ -121,6 +121,10 @@ daneel pause
 daneel resume
 daneel stop
 
+# pre-flight page from the real toolpaths (make + slice + view in one step, or any sliced 3MF)
+daneel preview box -s length=30
+daneel preview output/bracket.3mf
+
 # scan intake: repair, scale (from the calib cube) and bed-seat a photogrammetry mesh
 daneel import scan.obj --ref-real 20.0 --ref-model 0.482 --max-faces 200000
 
@@ -165,6 +169,7 @@ daneel/
 │   ├── dispatch.py     # P1S upload/start/monitor + auto-log (daneel print/status/pause/stop)
 │   ├── profiles.py     # flatten slicer presets (daneel profile flatten)
 │   ├── scan.py         # photogrammetry mesh intake (daneel import)
+│   ├── preview.py      # toolpath pre-flight page from a sliced 3MF (daneel preview)
 │   ├── export.py       # STL/STEP/3MF export
 │   ├── config.py       # printer/slicer configuration
 │   └── cli.py          # command-line entry point

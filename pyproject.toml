@@ -40,6 +40,9 @@ daneel = "daneel.cli:app"
 [project.urls]
 Homepage = "https://github.com/MartynJJ/daneel"
 
+[tool.setuptools.package-data]
+daneel = ["data/*.html"]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 

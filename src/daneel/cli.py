@@ -234,6 +234,49 @@ def stop(yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation.
     _control("stop")
 
 
+@app.command()
+def preview(
+    target: str = typer.Argument(..., help="A sliced .3mf, or a part name to make + slice first."),
+    set_values: list[str] = typer.Option(
+        [], "--set", "-s", help="Override a part parameter (repeatable); part names only."
+    ),
+    out: Path = typer.Option(None, "--out", "-o", help="Output .html (default: next to the 3MF)."),
+) -> None:
+    """Render the real toolpaths of a sliced job as a self-contained pre-flight page."""
+    from daneel.preview import PreviewError, preview_3mf
+
+    job = Path(target)
+    part = None
+    if job.suffix != ".3mf" or not job.exists():
+        from daneel.config import load
+        from daneel.slice import SlicerError, SlicerInterface
+
+        part = target
+        params_cls, build = registry.get(part)
+        field_types = {f.name: f.type for f in fields(params_cls)}
+        kwargs = {}
+        for item in set_values:
+            key, _, value = item.partition("=")
+            if key not in field_types:
+                raise typer.BadParameter(f"part {part!r} has no parameter {key!r}")
+            kwargs[key] = batchmod.coerce(field_types[key], value)
+        stl = export(build(params_cls(**kwargs)), f"output/{part}.stl")
+        try:
+            result = SlicerInterface(load().slicer).slice(stl, Path(f"output/{part}.3mf"))
+        except SlicerError as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(code=1) from exc
+        job = result.output
+        typer.echo(f"sliced -> {job}")
+    try:
+        page = preview_3mf(job, out, part)
+    except PreviewError as exc:
+        typer.echo(str(exc))
+        raise typer.Exit(code=1) from exc
+    typer.echo(f"preview -> {page}")
+    typer.echo(f"approve it, then: daneel print {job}")
+
+
 @app.command(name="import")
 def import_(
     mesh: Path = typer.Argument(..., help="Scan mesh (.stl/.obj/.ply/.glb...)."),

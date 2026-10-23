@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daneel · Pre-flight</title>
+<style>
+  :root{
+    --ground:#eef1f4; --panel:#ffffff; --panel-2:#f5f7f9; --hair:#d9dee4;
+    --ink:#161b22; --muted:#5b6673; --faint:#8b98a8;
+    --accent:#0d8de0; --accent-ink:#ffffff;
+    --go:#1a883b; --abort:#d23b32;
+    --viewport:#0c1016; --viewport-hair:#1c2430;
+    --mono: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --ground:#0a0d12; --panel:#12171f; --panel-2:#0e131a; --hair:#212a35;
+      --ink:#e6edf3; --muted:#8b98a8; --faint:#5f6b7a;
+      --accent:#38bdf8; --accent-ink:#04141f;
+      --go:#3fb950; --abort:#f85149;
+    }
+  }
+  :root[data-theme="light"]{
+    --ground:#eef1f4; --panel:#ffffff; --panel-2:#f5f7f9; --hair:#d9dee4;
+    --ink:#161b22; --muted:#5b6673; --faint:#8b98a8;
+    --accent:#0d8de0; --accent-ink:#ffffff; --go:#1a883b; --abort:#d23b32;
+  }
+  :root[data-theme="dark"]{
+    --ground:#0a0d12; --panel:#12171f; --panel-2:#0e131a; --hair:#212a35;
+    --ink:#e6edf3; --muted:#8b98a8; --faint:#5f6b7a;
+    --accent:#38bdf8; --accent-ink:#04141f; --go:#3fb950; --abort:#f85149;
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;line-height:1.5}
+  .wrap{max-width:1160px;margin:0 auto;padding:28px 22px 56px}
+
+  header.bar{display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+    padding-bottom:18px;border-bottom:1px solid var(--hair);margin-bottom:22px}
+  .brand{display:flex;flex-direction:column;gap:3px}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--faint)}
+  .title{font-size:22px;font-weight:650;letter-spacing:-.01em}
+  .title b{color:var(--accent);font-weight:650}
+  .pill{margin-left:auto;font-family:var(--mono);font-size:11px;letter-spacing:.12em;
+    text-transform:uppercase;padding:5px 11px;border-radius:999px;
+    background:color-mix(in srgb,var(--go) 16%,transparent);color:var(--go);
+    border:1px solid color-mix(in srgb,var(--go) 40%,transparent);display:inline-flex;gap:7px;align-items:center}
+  .pill .dot{width:6px;height:6px;border-radius:50%;background:var(--go)}
+
+  .grid{display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start}
+  @media(max-width:820px){.grid{grid-template-columns:1fr}}
+
+  .viewer{background:var(--viewport);border:1px solid var(--viewport-hair);border-radius:12px;
+    overflow:hidden;position:relative}
+  .stage{position:relative;width:100%;aspect-ratio:16/11;touch-action:none;cursor:grab}
+  .stage.dragging{cursor:grabbing}
+  canvas{display:block;width:100%;height:100%}
+  .hud{position:absolute;left:14px;bottom:12px;font-family:var(--mono);font-size:11.5px;
+    color:#9fb2c6;letter-spacing:.02em;pointer-events:none;text-shadow:0 1px 3px #000}
+  .hud b{color:#e8f1fb;font-weight:600}
+  .hint{position:absolute;right:14px;bottom:12px;font-family:var(--mono);font-size:10.5px;
+    color:#5f7286;pointer-events:none;letter-spacing:.03em}
+
+  .controls{display:flex;flex-direction:column;gap:14px;margin-top:16px}
+  .row{display:flex;align-items:center;gap:12px}
+  .seg{display:inline-flex;background:var(--panel-2);border:1px solid var(--hair);border-radius:9px;padding:3px}
+  .seg button{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+    border:0;background:transparent;color:var(--muted);padding:7px 14px;border-radius:6px;cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+  .seg button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  .play{width:40px;height:40px;flex:0 0 40px;border-radius:9px;border:1px solid var(--hair);
+    background:var(--panel-2);color:var(--ink);cursor:pointer;display:grid;place-items:center}
+  .play:hover{border-color:var(--accent)}
+  .play:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .play svg{width:16px;height:16px;fill:currentColor}
+
+  input[type=range]{-webkit-appearance:none;appearance:none;flex:1;height:6px;border-radius:99px;touch-action:none;
+    background:linear-gradient(90deg,var(--accent) 0 var(--pct,0%),var(--hair) var(--pct,0%) 100%);cursor:pointer}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+    background:var(--panel);border:2px solid var(--accent);box-shadow:0 1px 4px rgba(0,0,0,.35)}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--panel);border:2px solid var(--accent)}
+  input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+  .lcount{font-family:var(--mono);font-size:13px;color:var(--ink);font-variant-numeric:tabular-nums;
+    min-width:74px;text-align:right}
+  .lcount span{color:var(--faint)}
+
+  aside{display:flex;flex-direction:column;gap:16px}
+  .card{background:var(--panel);border:1px solid var(--hair);border-radius:12px;padding:18px}
+  .card h2{margin:0 0 14px;font-family:var(--mono);font-size:11px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--faint);font-weight:600}
+  .readout{display:flex;flex-direction:column;gap:0}
+  .readout .r{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+    padding:9px 0;border-bottom:1px solid var(--hair)}
+  .readout .r:last-child{border-bottom:0;padding-bottom:0}
+  .readout .k{font-size:12.5px;color:var(--muted)}
+  .readout .v{font-family:var(--mono);font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;
+    letter-spacing:.01em}
+  .readout .v small{font-size:11px;color:var(--faint);font-weight:500;margin-left:3px}
+
+  .gate .lede{font-size:13px;color:var(--muted);margin:0 0 14px;line-height:1.5}
+  .gate .btns{display:flex;flex-direction:column;gap:9px}
+  .btn{font-family:var(--sans);font-size:14px;font-weight:600;border-radius:9px;padding:12px 14px;
+    cursor:pointer;border:1px solid transparent;display:flex;align-items:center;justify-content:center;gap:8px}
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .btn.go{background:var(--go);color:#fff}
+  .btn.go:hover{filter:brightness(1.06)}
+  .btn.abort{background:transparent;color:var(--abort);border-color:color-mix(in srgb,var(--abort) 45%,transparent)}
+  .btn.abort:hover{background:color-mix(in srgb,var(--abort) 12%,transparent)}
+  .note{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:12px;line-height:1.5}
+
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
+    background:var(--panel);border:1px solid var(--hair);border-radius:10px;padding:12px 18px;
+    font-family:var(--mono);font-size:12.5px;box-shadow:0 8px 30px rgba(0,0,0,.3);opacity:0;
+    transition:opacity .25s,transform .25s;pointer-events:none;max-width:90vw;z-index:20}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.go{border-color:color-mix(in srgb,var(--go) 55%,transparent)}
+  .toast.abort{border-color:color-mix(in srgb,var(--abort) 55%,transparent)}
+  @media(prefers-reduced-motion:reduce){.toast{transition:opacity .15s}}
+
+  /* ---- phone ---- */
+  @media(max-width:560px){
+    .wrap{padding:16px 13px 40px}
+    header.bar{gap:10px;padding-bottom:14px;margin-bottom:16px}
+    .title{font-size:17px}
+    .eyebrow{font-size:10px}
+    .pill{font-size:10px;padding:4px 9px}
+    .grid{gap:14px}
+    .stage{aspect-ratio:1/1}               /* squarer for portrait viewing */
+    .controls{gap:16px;margin-top:14px}
+    .seg button{padding:10px 15px;font-size:12px}
+    .play{width:48px;height:48px;flex-basis:48px}
+    input[type=range]{height:8px}
+    input[type=range]::-webkit-slider-thumb{width:26px;height:26px}
+    input[type=range]::-moz-range-thumb{width:24px;height:24px}
+    .lcount{font-size:14px;min-width:66px}
+    /* stats become a compact tile grid instead of tall rows */
+    .readout{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .readout .r,.readout .r:last-child{flex-direction:column;align-items:flex-start;gap:3px;
+      padding:11px 10px;border-bottom:0;background:var(--panel-2);border:1px solid var(--hair);border-radius:9px}
+    .readout .k{font-size:10px;text-transform:uppercase;letter-spacing:.06em}
+    .readout .v{font-size:15px}
+    .btn{padding:15px}
+    .hint{font-size:9.5px}
+  }
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header class="bar">
+    <div class="brand">
+      <span class="eyebrow">Daneel · pre-flight</span>
+      <span class="title">Verify <b id="partName">part</b> before print</span>
+    </div>
+    <span class="pill"><span class="dot"></span> Sliced · P1S</span>
+  </header>
+
+  <div class="grid">
+    <section>
+      <div class="viewer">
+        <div class="stage" id="stage">
+          <canvas id="c"></canvas>
+          <div class="hud">Z <b id="hZ">0.00</b> mm · layer <b id="hL">0</b>/<b id="hLmax">0</b> · <b id="hMoves">0</b> moves</div>
+          <div class="hint" id="hint">drag orbit · pinch/scroll zoom</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="row">
+          <div class="seg" role="group" aria-label="Projection">
+            <button data-view="iso" aria-pressed="true">Iso</button>
+            <button data-view="top" aria-pressed="false">Top</button>
+            <button data-view="front" aria-pressed="false">Front</button>
+          </div>
+          <span style="flex:1"></span>
+          <span class="lcount"><span>layer</span> <b id="curL">0</b><span>/</span><span id="maxL">0</span></span>
+        </div>
+        <div class="row">
+          <button class="play" id="play" aria-label="Play build animation">
+            <svg id="playIcon" viewBox="0 0 16 16"><path d="M4 2.5v11l9-5.5z"/></svg>
+          </button>
+          <input type="range" id="slider" min="1" max="200" value="200" aria-label="Layer">
+        </div>
+      </div>
+    </section>
+
+    <aside>
+      <div class="card">
+        <h2>Slice readout</h2>
+        <div class="readout" id="readout"></div>
+      </div>
+      <div class="card gate">
+        <h2>Verification gate</h2>
+        <p class="lede">Scrub the toolpath top-to-bottom. Filament and machine time are committed only after you approve.</p>
+        <div class="btns">
+          <button class="btn go" id="approve">Approve &amp; print</button>
+          <button class="btn abort" id="reject">Reject slice</button>
+        </div>
+        <p class="note" id="note">→ approve here, then start it with daneel print</p>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DATA = /*__DATA__*/null;
+(function(){
+  const layers = DATA.layers, N = layers.length;
+  const cvs = document.getElementById('c'), ctx = cvs.getContext('2d');
+  const stage = document.getElementById('stage');
+  let view = 'iso', cur = N, azimuth = -0.6, elevation = Math.PI/6, zoom = 1, dpr = 1, W=0, H=0;
+  let fit = null; // {base, midU, midV} for current view+azimuth; zoom applied at draw
+
+  document.getElementById('partName').textContent = DATA.part;
+  document.getElementById('hLmax').textContent = N;
+  document.getElementById('maxL').textContent = N;
+  const slider = document.getElementById('slider'); slider.max = N; slider.value = N;
+
+  // --- readout ---
+  const fmtTime = m => m==null ? '—' : (m>=60 ? `${(m/60|0)}h ${m%60}m` : `${m}m`);
+  const rows = [
+    ['Part', DATA.part, ''],
+    ['Est. time', fmtTime(DATA.est_min), ''],
+    ['Filament', DATA.grams ? DATA.grams.toFixed(1) : '—', DATA.grams?'g':''],
+    ['Layers', String(N), ''],
+    ['Height', DATA.z_height.toFixed(2), 'mm'],
+    ['Footprint', `${DATA.bbox[0]} × ${DATA.bbox[1]}`, 'mm'],
+  ];
+  document.getElementById('readout').innerHTML = rows.map(([k,v,u])=>
+    `<div class="r"><span class="k">${k}</span><span class="v">${v}${u?`<small>${u}</small>`:''}</span></div>`).join('');
+
+  // --- viridis LUT ---
+  const stops=[[68,1,84],[59,82,139],[33,145,140],[94,201,98],[253,231,37]];
+  function viridis(t){
+    t=Math.max(0,Math.min(1,t))*(stops.length-1); const i=Math.floor(t), f=t-i;
+    const a=stops[i], b=stops[Math.min(i+1,stops.length-1)];
+    return `rgb(${a[0]+(b[0]-a[0])*f|0},${a[1]+(b[1]-a[1])*f|0},${a[2]+(b[2]-a[2])*f|0})`;
+  }
+
+  // --- projection: world (x,y,z) -> plane (u,v) ---
+  function project(x,y,z){
+    if(view==='top')   return [x, y];
+    if(view==='front') return [x, -z];
+    const rx = x*Math.cos(azimuth) - y*Math.sin(azimuth);
+    const ry = x*Math.sin(azimuth) + y*Math.cos(azimuth);
+    return [rx, ry*Math.sin(elevation) - z*Math.cos(elevation)];
+  }
+
+  // compute fit over ALL segments so framing is stable while scrubbing
+  function computeFit(){
+    let minu=1e9,maxu=-1e9,minv=1e9,maxv=-1e9;
+    for(const L of layers) for(const s of L.segs){
+      for(const p of [project(s[0],s[1],L.z), project(s[2],s[3],L.z)]){
+        if(p[0]<minu)minu=p[0]; if(p[0]>maxu)maxu=p[0];
+        if(p[1]<minv)minv=p[1]; if(p[1]>maxv)maxv=p[1];
+      }
+    }
+    const pad=0.10, spanU=(maxu-minu)||1, spanV=(maxv-minv)||1;
+    const base=Math.min(W/(spanU*(1+pad*2)), H/(spanV*(1+pad*2)));
+    fit={base, midU:(minu+maxu)/2, midV:(minv+maxv)/2};
+  }
+
+  function resize(){
+    dpr=Math.min(window.devicePixelRatio||1,2);
+    W=stage.clientWidth; H=stage.clientHeight;
+    cvs.width=W*dpr; cvs.height=H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+    computeFit(); draw();
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    if(!fit) return;
+    const scale=fit.base*zoom, ox=W/2-fit.midU*scale, oy=H/2-fit.midV*scale;
+    let moves=0;
+    for(let li=0; li<cur; li++){
+      const L=layers[li], col=viridis(li/(N-1||1));
+      ctx.strokeStyle=col;
+      ctx.lineWidth = (li===cur-1)?1.1:0.5;
+      ctx.globalAlpha = (li===cur-1)?1 : 0.85;
+      ctx.beginPath();
+      for(const s of L.segs){
+        const a=project(s[0],s[1],L.z), b=project(s[2],s[3],L.z);
+        ctx.moveTo(a[0]*scale+ox, a[1]*scale+oy);
+        ctx.lineTo(b[0]*scale+ox, b[1]*scale+oy);
+      }
+      ctx.stroke();
+      if(li===cur-1) moves=L.segs.length;
+    }
+    ctx.globalAlpha=1;
+    const z=layers[cur-1]?layers[cur-1].z:0;
+    document.getElementById('hZ').textContent=z.toFixed(2);
+    document.getElementById('hL').textContent=cur;
+    document.getElementById('hMoves').textContent=moves;
+    document.getElementById('curL').textContent=cur;
+    slider.style.setProperty('--pct', (cur/N*100)+'%');
+  }
+
+  function setCur(n){ cur=Math.max(1,Math.min(N,n)); slider.value=cur; draw(); }
+
+  // --- controls ---
+  slider.addEventListener('input', e=>{ stopPlay(); setCur(+e.target.value); });
+  document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('.seg button').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true'); view=b.dataset.view;
+    document.getElementById('hint').style.visibility = view==='iso' ? 'visible':'hidden';
+    computeFit(); draw();
+  }));
+
+  // orbit (1 finger / drag, iso only) + pinch-zoom (2 fingers) + wheel zoom
+  const ptrs=new Map(); let pinchD=0, pinchZ=1;
+  const clampZ=z=>Math.max(0.35,Math.min(6,z));
+  stage.addEventListener('pointerdown',e=>{
+    ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY}); stage.setPointerCapture(e.pointerId);
+    if(ptrs.size===1 && view==='iso') stage.classList.add('dragging');
+    if(ptrs.size===2){ const p=[...ptrs.values()]; pinchD=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y); pinchZ=zoom; }
+  });
+  stage.addEventListener('pointermove',e=>{
+    if(!ptrs.has(e.pointerId))return;
+    const prev=ptrs.get(e.pointerId);
+    if(ptrs.size>=2){ // pinch
+      ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      const p=[...ptrs.values()], d=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);
+      if(pinchD>0){ zoom=clampZ(pinchZ*d/pinchD); draw(); }
+      return;
+    }
+    if(view==='iso'){
+      azimuth += (e.clientX-prev.x)*0.01;
+      elevation = Math.max(0.02, Math.min(Math.PI/2, elevation + (e.clientY-prev.y)*0.008));
+      computeFit(); draw();
+    }
+    ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  });
+  function endPtr(e){ ptrs.delete(e.pointerId); if(ptrs.size<2)pinchD=0; if(!ptrs.size)stage.classList.remove('dragging'); }
+  stage.addEventListener('pointerup',endPtr);
+  stage.addEventListener('pointercancel',endPtr);
+  stage.addEventListener('wheel',e=>{ e.preventDefault(); zoom=clampZ(zoom*(e.deltaY<0?1.12:0.89)); draw(); },{passive:false});
+  stage.addEventListener('dblclick',()=>{ zoom=1; azimuth=-0.6; elevation=Math.PI/6; computeFit(); draw(); });
+
+  // play / build animation
+  let playing=false, raf=0, acc=0, last=0;
+  const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  const playIcon=document.getElementById('playIcon');
+  const ICON_PLAY='M4 2.5v11l9-5.5z', ICON_PAUSE='M4 2.5h3v11H4zM9 2.5h3v11H9z';
+  function tick(t){
+    if(!playing)return;
+    if(!last)last=t; acc+=(t-last)/1000; last=t;
+    const perSec = reduce? N : 60;
+    const add=Math.floor(acc*perSec); if(add>0){ acc-=add/perSec; setCur(cur+add); }
+    if(cur>=N){ stopPlay(); return; }
+    raf=requestAnimationFrame(tick);
+  }
+  function startPlay(){ if(cur>=N)setCur(1); playing=true; last=0; acc=0;
+    playIcon.setAttribute('d',ICON_PAUSE); raf=requestAnimationFrame(tick); }
+  function stopPlay(){ playing=false; cancelAnimationFrame(raf); playIcon.setAttribute('d',ICON_PLAY); }
+  document.getElementById('play').addEventListener('click',()=> playing?stopPlay():startPlay());
+
+  // gate
+  const toast=document.getElementById('toast');
+  let toastT=0;
+  function showToast(msg,kind){ toast.textContent=msg; toast.className='toast show '+kind;
+    clearTimeout(toastT); toastT=setTimeout(()=>toast.className='toast',3200); }
+  document.getElementById('approve').addEventListener('click',()=>
+    showToast('✓ Approved — now run: daneel print '+DATA.part+'.3mf','go'));
+  document.getElementById('reject').addEventListener('click',()=>
+    showToast('✕ Rejected — nothing sent to the printer','abort'));
+
+  new ResizeObserver(resize).observe(stage);
+  resize();
+})();
+</script>
+
+</body>
+</html>
