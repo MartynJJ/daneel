@@ -112,6 +112,12 @@ class P1S:
     def stop(self) -> bool:
         return self._printer.stop_print()
 
+    def pause(self) -> bool:
+        return self._printer.pause_print()
+
+    def resume(self) -> bool:
+        return self._printer.resume_print()
+
 
 def watch(
     session: P1S,

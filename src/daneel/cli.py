@@ -196,6 +196,68 @@ def status() -> None:
         typer.echo(f"job:    {st.file}  {st.percent}%  {st.remaining_min} min left")
 
 
+def _control(action: str) -> None:
+    from daneel.config import load
+    from daneel.dispatch import P1S, DispatchError
+
+    cfg = load().printer
+    if cfg is None:
+        raise typer.BadParameter("no [printer] section in config")
+    try:
+        with P1S(cfg) as p:
+            ok = getattr(p, action)()
+    except DispatchError as exc:
+        typer.echo(str(exc))
+        raise typer.Exit(code=1) from exc
+    typer.echo(f"{action}: {'ok' if ok else 'printer did not accept the command'}")
+    if not ok:
+        raise typer.Exit(code=1)
+
+
+@app.command()
+def pause() -> None:
+    """Pause the current print."""
+    _control("pause")
+
+
+@app.command()
+def resume() -> None:
+    """Resume a paused print."""
+    _control("resume")
+
+
+@app.command()
+def stop(yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation.")) -> None:
+    """Abort the current print."""
+    if not yes and not typer.confirm("Abort the running print?"):
+        raise typer.Exit(code=1)
+    _control("stop")
+
+
+profile_app = typer.Typer(help="Slicer preset helpers.", no_args_is_help=True)
+app.add_typer(profile_app, name="profile")
+
+
+@profile_app.command("flatten")
+def profile_flatten(
+    preset: Path = typer.Argument(..., help="Preset .json (parents are read from its folder)."),
+    out: Path = typer.Option(..., "--out", "-o", help="Where to write the flattened preset."),
+) -> None:
+    """Resolve `inherits` so the headless slicer sees values like filament density."""
+    import json
+
+    from daneel.profiles import ProfileError, flatten
+
+    try:
+        merged = flatten(preset)
+    except ProfileError as exc:
+        typer.echo(str(exc))
+        raise typer.Exit(code=1) from exc
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(merged, indent=4))
+    typer.echo(f"wrote {out} ({len(merged)} settings)")
+
+
 @app.command(name="print")
 def print_(
     job: Path = typer.Argument(..., help="Sliced .3mf (from `daneel slice`)."),
@@ -203,6 +265,11 @@ def print_(
     filament: str = typer.Option(None, "--filament", help='e.g. "PLA Basic".'),
     ams: bool = typer.Option(False, "--ams/--no-ams", help="Use AMS (default: external spool)."),
     wait: bool = typer.Option(True, "--wait/--no-wait", help="Monitor and auto-log on finish."),
+    upload_only: bool = typer.Option(
+        False,
+        "--upload-only",
+        help="Upload to the printer but do not start (start it from the screen/app).",
+    ),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip the confirmation prompt."),
 ) -> None:
     """Upload a sliced 3MF to the P1S, start it, and log the outcome."""
@@ -232,12 +299,17 @@ def print_(
             if st.busy:
                 typer.echo(f"printer busy ({st.state}, {st.percent}%) - refusing to start")
                 raise typer.Exit(code=1)
+            verb = "Upload" if upload_only else "Start"
             if not yes and not typer.confirm(
-                f"Start {job.name} ({est}) on the P1S? Bed must be clear."
+                f"{verb} {job.name} ({est}) on the P1S?"
+                + ("" if upload_only else " Bed must be clear.")
             ):
                 raise typer.Exit(code=1)
             name = p.upload(job)
             typer.echo(f"uploaded {name}")
+            if upload_only:
+                typer.echo("not started - start it from the printer screen or app")
+                return
             p.start(name, use_ams=ams)
             typer.echo("started")
             if not wait:

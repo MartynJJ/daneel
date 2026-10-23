@@ -113,6 +113,17 @@ daneel print output/bracket.3mf --part bracket --filament "PLA Basic"   # --ams 
 # Developer Mode switched on (printer screen: Settings > Network). Cloud/Handy control is
 # off while LAN Only Mode is on.
 
+# stage a job without starting it (start from the printer screen/app); control a live print
+daneel print output/bracket.3mf --upload-only
+daneel pause
+daneel resume
+daneel stop
+
+# the CLI doesn't resolve preset inheritance, so system filament presets slice as 0 g (and with
+# root-default cooling values). Flatten one once, then point slicer.filament_profile at it
+daneel profile flatten "/opt/orca/resources/profiles/BBL/filament/Generic PLA High Speed @BBL P1P.json" \
+    -o ~/.config/daneel/profiles/pla.json
+
 # log a finished print and review progress
 daneel log add "desk hook v2" --part bracket --filament "PLA Basic" --grams 14 --minutes 52
 daneel log list
@@ -142,7 +153,8 @@ daneel/
 │   ├── batch.py        # CSV/YAML batch driver + manifest
 │   ├── printlog.py     # append-only print history (daneel log)
 │   ├── slice.py        # headless slicer wrapper (daneel slice)
-│   ├── dispatch.py     # P1S upload/start/monitor + auto-log (daneel print/status)
+│   ├── dispatch.py     # P1S upload/start/monitor + auto-log (daneel print/status/pause/stop)
+│   ├── profiles.py     # flatten slicer presets (daneel profile flatten)
 │   ├── export.py       # STL/STEP/3MF export
 │   ├── config.py       # printer/slicer configuration
 │   └── cli.py          # command-line entry point

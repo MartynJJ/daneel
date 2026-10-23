@@ -13,6 +13,8 @@ binary = "orca-slicer"       # or "bambu-studio" — must be on PATH
 # its compatible_printers. For the P1S, Bambu groups those under "@BBL X1C".
 machine_profile  = "/opt/orca/resources/profiles/BBL/machine/Bambu Lab P1S 0.4 nozzle.json"
 process_profile  = "/opt/orca/resources/profiles/BBL/process/0.20mm Standard @BBL X1C.json"
+# Use a *flattened* preset (`daneel profile flatten`) so density/cooling inherit correctly;
+# the raw system preset below slices as 0 g.
 filament_profile = "/opt/orca/resources/profiles/BBL/filament/Generic PLA High Speed @BBL P1P.json"
 bed_type = "Textured PEI Plate"  # or "Cool Plate" / "Engineering Plate" / "High Temp Plate"
 export_format = "3mf"        # 3MF only — the OrcaSlicer CLI has no --export-gcode
