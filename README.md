@@ -58,14 +58,14 @@ fixed) a bracket geometry bug where vertical-leg holes severed the leg.
 - [x] Append-only JSONL log of every completed print (`daneel log add`)
 - [x] List and filter history (`daneel log list`)
 - [x] Aggregate stats: count, success rate, filament used, print hours (`daneel log stats`)
-- [ ] Auto-append from printer telemetry (arrives with Phase 4)
+- [x] Auto-append from printer telemetry (`daneel print` logs on finish)
 
 ### Phase 4 — Printer dispatch
-- [ ] Send jobs to the P1S over the network (MQTT / LAN mode via [`bambulabs-api`])
-- [ ] Query printer state (idle / printing / error, temps, progress)
+- [x] Send jobs to the P1S over the network (MQTT / LAN mode via [`bambulabs-api`]) — `daneel print`
+- [x] Query printer state (idle / printing / error, temps, progress) — `daneel status`
 - [ ] AMS filament awareness — pick the right slot
 - [ ] Print queue: enqueue a batch, print sequentially
-- [ ] Auto-log each finished print into the print log
+- [x] Auto-log each finished print into the print log (unit-tested; awaiting first real print)
 
 ### Phase 5 — Ergonomics
 - [ ] `daneel` CLI (`daneel make <part> --print`)
@@ -101,6 +101,11 @@ daneel batch examples/batch.example.yaml
 daneel slice output/bracket.stl --dry-run
 daneel slice output/bracket.stl -o output/bracket.3mf
 
+# live printer state, then send a sliced job (confirms, uploads, starts, monitors, auto-logs)
+# needs a [printer] section in the config: ip, serial, access_code (LAN mode)
+daneel status
+daneel print output/bracket.3mf --part bracket --filament "PLA Basic"   # --ams for AMS
+
 # log a finished print and review progress
 daneel log add "desk hook v2" --part bracket --filament "PLA Basic" --grams 14 --minutes 52
 daneel log list
@@ -130,6 +135,7 @@ daneel/
 │   ├── batch.py        # CSV/YAML batch driver + manifest
 │   ├── printlog.py     # append-only print history (daneel log)
 │   ├── slice.py        # headless slicer wrapper (daneel slice)
+│   ├── dispatch.py     # P1S upload/start/monitor + auto-log (daneel print/status)
 │   ├── export.py       # STL/STEP/3MF export
 │   ├── config.py       # printer/slicer configuration
 │   └── cli.py          # command-line entry point

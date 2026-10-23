@@ -4,8 +4,8 @@
     daneel make box -s length=120     # build one model, overriding parameters
     daneel batch examples/batch.example.csv   # build many from a spec
 
-Slicing (`slice`) and printing (`print`) are stubbed pending Phase 3/4 —
-see the roadmap in README.md.
+Slicing (`slice`), printing (`print`) and `status` need the slicer / printer
+configured - see README.md.
 """
 
 from __future__ import annotations
@@ -175,11 +175,78 @@ def slice(  # noqa: A001 - matches user-facing verb
         typer.echo(f"  filament:  {result.grams:.1f} g")
 
 
+@app.command()
+def status() -> None:
+    """Show live P1S status."""
+    from daneel.config import load
+    from daneel.dispatch import P1S, DispatchError
+
+    cfg = load().printer
+    if cfg is None:
+        raise typer.BadParameter("no [printer] section in config")
+    try:
+        with P1S(cfg) as p:
+            st = p.status()
+    except DispatchError as exc:
+        typer.echo(str(exc))
+        raise typer.Exit(code=1) from exc
+    typer.echo(f"state:  {st.state}")
+    typer.echo(f"bed:    {st.bed_temp}C  nozzle: {st.nozzle_temp}C")
+    if st.busy:
+        typer.echo(f"job:    {st.file}  {st.percent}%  {st.remaining_min} min left")
+
+
 @app.command(name="print")
-def print_() -> None:
-    """[Phase 4] Send a sliced job to the P1S over LAN."""
-    typer.echo("not implemented yet — see roadmap (Phase 4).")
-    raise typer.Exit(code=1)
+def print_(
+    job: Path = typer.Argument(..., help="Sliced .3mf (from `daneel slice`)."),
+    part: str = typer.Option(None, "--part", help="Registry part name for the log."),
+    filament: str = typer.Option(None, "--filament", help='e.g. "PLA Basic".'),
+    ams: bool = typer.Option(False, "--ams/--no-ams", help="Use AMS (default: external spool)."),
+    wait: bool = typer.Option(True, "--wait/--no-wait", help="Monitor and auto-log on finish."),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip the confirmation prompt."),
+) -> None:
+    """Upload a sliced 3MF to the P1S, start it, and log the outcome."""
+    from daneel.config import load
+    from daneel.dispatch import P1S, DispatchError, PrinterStatus, watch
+    from daneel.slice import read_3mf_estimates
+
+    cfg = load().printer
+    if cfg is None:
+        raise typer.BadParameter("no [printer] section in config")
+    if not job.exists() or job.suffix != ".3mf":
+        raise typer.BadParameter(f"{job} is not a .3mf file")
+    minutes, grams = read_3mf_estimates(job)
+    est = f"~{minutes:.0f} min" if minutes else "unknown time"
+    est += f", {grams:.1f} g" if grams else ""
+    last = [""]
+
+    def show(s: PrinterStatus) -> None:
+        line = f"{s.state} {s.percent}% {s.remaining_min}m"
+        if line != last[0]:
+            typer.echo(line)
+            last[0] = line
+
+    try:
+        with P1S(cfg) as p:
+            st = p.status()
+            if st.busy:
+                typer.echo(f"printer busy ({st.state}, {st.percent}%) - refusing to start")
+                raise typer.Exit(code=1)
+            if not yes and not typer.confirm(
+                f"Start {job.name} ({est}) on the P1S? Bed must be clear."
+            ):
+                raise typer.Exit(code=1)
+            name = p.upload(job)
+            typer.echo(f"uploaded {name}")
+            p.start(name, use_ams=ams)
+            typer.echo("started")
+            if not wait:
+                return
+            rec = watch(p, job, part=part, filament=filament, on_status=show)
+    except DispatchError as exc:
+        typer.echo(str(exc))
+        raise typer.Exit(code=1) from exc
+    typer.echo(f"logged {rec.id} [{rec.status}]")
 
 
 if __name__ == "__main__":
