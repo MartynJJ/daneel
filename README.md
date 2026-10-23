@@ -50,7 +50,9 @@ version-controllable, and batchable.
 **Validation notes (OrcaSlicer 2.4.1):** there is no `--export-gcode` (G-code is
 embedded in the 3MF, which is what the P1S prints); `--arrange 1 --slice 0` are
 required; estimates live in the 3MF at `Metadata/slice_info.config`, not stdout;
-and the P1S process presets are grouped under `@BBL X1C`. Headless machines run
+and the P1S process presets are grouped under `@BBL X1C`. The build plate comes from
+`slicer.bed_type` (default `Textured PEI Plate`, the P1S stock plate: 65 C PLA bed plus
+Bambu's Z trim); the slicer otherwise defaults to Cool Plate (35 C), wrong for textured PEI. Headless machines run
 the AppImage via `xvfb-run … AppRun`. Real-slice validation also caught (and
 fixed) a bracket geometry bug where vertical-leg holes severed the leg.
 

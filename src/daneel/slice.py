@@ -131,6 +131,8 @@ class SlicerInterface:
             )
         settings = [p for p in (self.config.machine_profile, self.config.process_profile) if p]
         cmd = [self.config.binary]
+        if self.config.bed_type:
+            cmd += ["--curr-bed-type", self.config.bed_type]
         if settings:
             cmd += ["--load-settings", ";".join(settings)]
         if self.config.filament_profile:

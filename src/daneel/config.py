@@ -43,6 +43,7 @@ class SlicerConfig(BaseModel):
     filament_profile: str | None = None  # path to filament settings .json
     export_format: str = "3mf"  # "3mf" or "gcode"
     layer_height: float = 0.2
+    bed_type: str = "Textured PEI Plate"  # P1S ships with textured PEI (65C PLA bed + Z trim)
 
 
 class Config(BaseModel):

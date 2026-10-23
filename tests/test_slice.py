@@ -42,6 +42,7 @@ def test_build_command_includes_profiles_and_flags(tmp_path):
     assert cmd[cmd.index("--load-filaments") + 1] == "/p/pla.json"
     assert cmd[cmd.index("--slice") + 1] == "0"
     assert "--arrange" in cmd and "--export-3mf" in cmd
+    assert cmd[cmd.index("--curr-bed-type") + 1] == "Textured PEI Plate"
     assert cmd[-1] == str(tmp_path / "in.stl")
 
 
