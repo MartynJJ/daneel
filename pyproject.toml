@@ -47,6 +47,10 @@ where = ["src"]
 line-length = 100
 src = ["src"]
 
+[tool.ruff.lint]
+# Explicit so results do not shift as ruff changes its default rule set.
+select = ["E4", "E7", "E9", "F", "I"]
+
 [tool.mypy]
 python_version = "3.10"
 ignore_missing_imports = true
