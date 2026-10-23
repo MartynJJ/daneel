@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from daneel.config import PrinterConfig
@@ -35,10 +35,23 @@ class PrinterStatus:
     bed_temp: float | None
     nozzle_temp: float | None
     file: str | None
+    hms: list[str] = field(default_factory=list)  # active HMS codes, e.g. 0500-0500-0001-0007
 
     @property
     def busy(self) -> bool:
         return self.state not in _IDLE and self.state != "UNKNOWN"
+
+
+def _hms_codes(raw: object) -> list[str]:
+    """Format the printer's ``hms`` list ([{attr, code}, ...]) as ``XXXX-XXXX-XXXX-XXXX``."""
+    out = []
+    for item in raw if isinstance(raw, list) else []:
+        try:
+            h = f"{int(item['attr']):08X}{int(item['code']):08X}"
+        except (KeyError, TypeError, ValueError):
+            continue
+        out.append("-".join(h[i : i + 4] for i in range(0, 16, 4)))
+    return out
 
 
 class P1S:
@@ -81,6 +94,7 @@ class P1S:
             bed_temp=p.get_bed_temperature(),
             nozzle_temp=p.get_nozzle_temperature(),
             file=p.get_file_name() or None,
+            hms=_hms_codes(p.mqtt_dump().get("print", {}).get("hms")),
         )
 
     def upload(self, path: Path) -> str:
@@ -119,11 +133,19 @@ def watch(
     """
     t_wait = clock()
     seen_active = False
+    baseline: set[str] | None = None
+    notes = None
     t_start = clock()
     while True:
         st = session.status()
         if on_status:
             on_status(st)
+        if baseline is None:
+            baseline = set(st.hms)
+        new_hms = [c for c in st.hms if c not in baseline]
+        if new_hms and not seen_active:
+            status, notes = "failed", "printer rejected job: HMS " + ", ".join(new_hms)
+            break
         if st.state in ("PREPARE", "RUNNING", "PAUSE"):
             if not seen_active:
                 seen_active, t_start = True, clock()
@@ -143,7 +165,7 @@ def watch(
         file=str(path),
         filament=filament,
         grams=grams if status == "success" else None,
-        duration_min=round(elapsed, 1) if elapsed is not None else minutes,
+        duration_min=round(elapsed, 1) if elapsed is not None else None,
         status=status,
-        notes=None if seen_active else "print never started",
+        notes=notes or (None if seen_active else "print never started"),
     )

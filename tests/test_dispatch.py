@@ -61,3 +61,27 @@ def test_never_started(tmp_path, monkeypatch):
 
 def test_busy_flag():
     assert _st("RUNNING").busy and not _st("FINISH").busy and not _st("UNKNOWN").busy
+
+
+def test_hms_rejection_fails_fast(tmp_path, monkeypatch):
+    rejected = PrinterStatus("FINISH", 100, None, 25.0, 25.0, None, ["0500-0500-0001-0007"])
+    rec = _run([_st("FINISH"), rejected], tmp_path, monkeypatch)
+    assert rec.status == "failed" and "0500-0500-0001-0007" in rec.notes
+    assert rec.duration_min is None
+
+
+def test_preexisting_hms_ignored(tmp_path, monkeypatch):
+    old = ["0300-0100-0001-0001"]
+    states = [
+        PrinterStatus("FINISH", 100, None, 25.0, 25.0, None, old),
+        PrinterStatus("RUNNING", 5, None, 25.0, 25.0, None, old),
+        PrinterStatus("FINISH", 100, None, 25.0, 25.0, None, old),
+    ]
+    assert _run(states, tmp_path, monkeypatch).status == "success"
+
+
+def test_hms_code_format():
+    assert dispatch._hms_codes([{"attr": 0x05000500, "code": 0x00010007}]) == [
+        "0500-0500-0001-0007"
+    ]
+    assert dispatch._hms_codes(None) == []

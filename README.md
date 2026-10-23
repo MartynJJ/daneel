@@ -108,6 +108,11 @@ daneel slice output/bracket.stl -o output/bracket.3mf
 daneel status
 daneel print output/bracket.3mf --part bracket --filament "PLA Basic"   # --ams for AMS
 
+# NOTE: current Bambu firmware rejects third-party start commands (HMS 0500-0500-0001-0007,
+# "MQTT command verification failed") unless the printer has LAN Only Mode and then
+# Developer Mode switched on (printer screen: Settings > Network). Cloud/Handy control is
+# off while LAN Only Mode is on.
+
 # log a finished print and review progress
 daneel log add "desk hook v2" --part bracket --filament "PLA Basic" --grams 14 --minutes 52
 daneel log list
