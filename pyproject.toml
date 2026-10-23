@@ -24,7 +24,14 @@ dependencies = [
 # Printer control + slicing automation (Phase 3/4). Optional so the core CAD
 # library installs without pulling networking deps.
 printer = ["bambulabs-api>=2.0", "paho-mqtt>=2"]
-scan = ["opencv-contrib-python-headless>=4.7"]  # ArUco marker gen for calib_cube
+scan = [  # calib_cube markers + `daneel import` scan intake
+    "opencv-contrib-python-headless>=4.7",
+    "trimesh>=4",
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "networkx>=3",
+    "fast-simplification>=0.1.7",
+]
 dev = ["pytest>=8", "ruff>=0.5", "mypy>=1.10"]
 
 [project.scripts]

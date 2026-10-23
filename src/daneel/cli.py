@@ -234,6 +234,42 @@ def stop(yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation.
     _control("stop")
 
 
+@app.command(name="import")
+def import_(
+    mesh: Path = typer.Argument(..., help="Scan mesh (.stl/.obj/.ply/.glb...)."),
+    out: Path = typer.Option(None, "--out", "-o", help="Output STL (default: <name>_print.stl)."),
+    scale: float = typer.Option(1.0, "--scale", help="Uniform scale factor."),
+    ref_real: float = typer.Option(None, "--ref-real", help="True size of a reference (mm)."),
+    ref_model: float = typer.Option(
+        None, "--ref-model", help="Same reference measured in the scan (model units)."
+    ),
+    max_faces: int = typer.Option(None, "--max-faces", help="Decimate above this triangle count."),
+    auto_orient: bool = typer.Option(
+        False, "--auto-orient", help="Lay it on its most stable face."
+    ),
+) -> None:
+    """Repair, scale and bed-seat a photogrammetry mesh so it can be sliced."""
+    from daneel.scan import ScanError, prepare, scale_from_reference
+
+    if (ref_real is None) != (ref_model is None):
+        raise typer.BadParameter("give both --ref-real and --ref-model, or neither")
+    try:
+        if ref_real is not None and ref_model is not None:
+            scale = scale_from_reference(ref_real, ref_model)
+        dst = out or mesh.with_name(f"{mesh.stem}_print.stl")
+        rep = prepare(mesh, dst, scale=scale, max_faces=max_faces, auto_orient=auto_orient)
+    except ScanError as exc:
+        typer.echo(str(exc))
+        raise typer.Exit(code=1) from exc
+    x, y, z = rep.extents_mm
+    typer.echo(f"wrote {dst}")
+    typer.echo(f"  size:  {x:.1f} x {y:.1f} x {z:.1f} mm  (scale {rep.scale:.4f})")
+    typer.echo(f"  faces: {rep.faces_in} -> {rep.faces_out}, watertight={rep.watertight}")
+    for note in rep.notes:
+        typer.echo(f"  note:  {note}")
+    typer.echo("check the size above, then: daneel slice " + str(dst))
+
+
 files_app = typer.Typer(help="Job files on the printer's storage (FTPS).", no_args_is_help=True)
 app.add_typer(files_app, name="files")
 

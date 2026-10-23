@@ -121,6 +121,9 @@ daneel pause
 daneel resume
 daneel stop
 
+# scan intake: repair, scale (from the calib cube) and bed-seat a photogrammetry mesh
+daneel import scan.obj --ref-real 20.0 --ref-model 0.482 --max-faces 200000
+
 # manage job files on the printer's storage (FTPS only)
 daneel files list
 daneel files rm calib_cube_20.3mf
@@ -161,6 +164,7 @@ daneel/
 │   ├── slice.py        # headless slicer wrapper (daneel slice)
 │   ├── dispatch.py     # P1S upload/start/monitor + auto-log (daneel print/status/pause/stop)
 │   ├── profiles.py     # flatten slicer presets (daneel profile flatten)
+│   ├── scan.py         # photogrammetry mesh intake (daneel import)
 │   ├── export.py       # STL/STEP/3MF export
 │   ├── config.py       # printer/slicer configuration
 │   └── cli.py          # command-line entry point
