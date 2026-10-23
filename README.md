@@ -113,7 +113,9 @@ daneel print output/bracket.3mf --part bracket --filament "PLA Basic"   # --ams 
 # Developer Mode switched on (printer screen: Settings > Network). Cloud/Handy control is
 # off while LAN Only Mode is on.
 
-# stage a job without starting it (start from the printer screen/app); control a live print
+# stage a job without starting it (FTPS only; works with LAN Only Mode off, so the Handy app
+# keeps working: start from the printer screen/app). status/pause/resume/stop/auto-log need
+# MQTT, which is only open in LAN Only Mode
 daneel print output/bracket.3mf --upload-only
 daneel pause
 daneel resume

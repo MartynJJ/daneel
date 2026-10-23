@@ -119,6 +119,22 @@ class P1S:
         return self._printer.resume_print()
 
 
+def upload_file(config: PrinterConfig, path: Path) -> str:
+    """FTPS-upload a 3MF without opening MQTT (works with LAN Only Mode off)."""
+    try:
+        from bambulabs_api import Printer
+    except ImportError as exc:
+        raise DispatchError('bambulabs-api missing: pip install -e ".[printer]"') from exc
+    try:
+        with path.open("rb") as fh:
+            reply = Printer(config.ip, config.access_code, config.serial).upload_file(fh, path.name)
+    except OSError as exc:
+        raise DispatchError(f"upload failed: {exc}") from exc
+    if not reply or "226" not in reply:
+        raise DispatchError(f"upload failed: {reply!r}")
+    return path.name
+
+
 def watch(
     session: P1S,
     path: Path,

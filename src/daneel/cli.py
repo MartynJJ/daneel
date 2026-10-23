@@ -268,13 +268,13 @@ def print_(
     upload_only: bool = typer.Option(
         False,
         "--upload-only",
-        help="Upload to the printer but do not start (start it from the screen/app).",
+        help="FTPS upload only, no MQTT (works with LAN Only Mode off); start from the screen/app.",
     ),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip the confirmation prompt."),
 ) -> None:
     """Upload a sliced 3MF to the P1S, start it, and log the outcome."""
     from daneel.config import load
-    from daneel.dispatch import P1S, DispatchError, PrinterStatus, watch
+    from daneel.dispatch import P1S, DispatchError, PrinterStatus, upload_file, watch
     from daneel.slice import read_3mf_estimates
 
     cfg = load().printer
@@ -293,23 +293,27 @@ def print_(
             typer.echo(line)
             last[0] = line
 
+    if upload_only:
+        # FTPS only: MQTT (8883) is closed unless LAN Only Mode is on.
+        try:
+            name = upload_file(cfg, job)
+        except DispatchError as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(code=1) from exc
+        typer.echo(f"uploaded {name} ({est}) - start it from the printer screen or app")
+        return
     try:
         with P1S(cfg) as p:
             st = p.status()
             if st.busy:
                 typer.echo(f"printer busy ({st.state}, {st.percent}%) - refusing to start")
                 raise typer.Exit(code=1)
-            verb = "Upload" if upload_only else "Start"
             if not yes and not typer.confirm(
-                f"{verb} {job.name} ({est}) on the P1S?"
-                + ("" if upload_only else " Bed must be clear.")
+                f"Start {job.name} ({est}) on the P1S? Bed must be clear."
             ):
                 raise typer.Exit(code=1)
             name = p.upload(job)
             typer.echo(f"uploaded {name}")
-            if upload_only:
-                typer.echo("not started - start it from the printer screen or app")
-                return
             p.start(name, use_ams=ams)
             typer.echo("started")
             if not wait:
