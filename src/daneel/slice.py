@@ -59,7 +59,9 @@ def read_3mf_estimates(path: str | Path) -> tuple[float | None, float | None]:
     profile (density baked in) if you need weight.
     """
     with zipfile.ZipFile(path) as archive:
-        name = next((n for n in archive.namelist() if n.lower().endswith("slice_info.config")), None)
+        name = next(
+            (n for n in archive.namelist() if n.lower().endswith("slice_info.config")), None
+        )
         if name is None:
             return None, None
         root = ET.fromstring(archive.read(name))
@@ -68,9 +70,10 @@ def read_3mf_estimates(path: str | Path) -> tuple[float | None, float | None]:
         grams = 0.0
         for plate in root.iterfind("plate"):
             for meta in plate.iterfind("metadata"):
-                if meta.get("key") == "prediction" and meta.get("value"):
+                value = meta.get("value")
+                if meta.get("key") == "prediction" and value:
                     try:
-                        duration = (duration or 0.0) + float(meta.get("value")) / 60
+                        duration = (duration or 0.0) + float(value) / 60
                     except ValueError:
                         pass
             for filament in plate.iterfind("filament"):

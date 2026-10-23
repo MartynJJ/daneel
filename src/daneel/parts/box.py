@@ -49,11 +49,15 @@ def build(params: BoxParams | None = None) -> cq.Workplane:
         outer = outer.edges("|Z").fillet(p.fillet)
 
     # Cavity: start above the floor, overshoot the top so it opens fully.
-    cavity = cq.Workplane("XY").workplane(offset=p.floor).box(
-        p.length - 2 * p.wall,
-        p.width - 2 * p.wall,
-        p.height,  # > remaining height, so the top is left open
-        centered=(True, True, False),
+    cavity = (
+        cq.Workplane("XY")
+        .workplane(offset=p.floor)
+        .box(
+            p.length - 2 * p.wall,
+            p.width - 2 * p.wall,
+            p.height,  # > remaining height, so the top is left open
+            centered=(True, True, False),
+        )
     )
     inner_fillet = max(p.fillet - p.wall, 0)
     if inner_fillet > 0:

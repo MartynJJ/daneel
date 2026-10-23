@@ -23,7 +23,9 @@ _SLICE_INFO = """<?xml version="1.0"?>
 
 def _make_3mf(path, prediction="1795", grams="12.34", gcode=None):
     with zipfile.ZipFile(path, "w") as z:
-        z.writestr("Metadata/slice_info.config", _SLICE_INFO.format(prediction=prediction, grams=grams))
+        z.writestr(
+            "Metadata/slice_info.config", _SLICE_INFO.format(prediction=prediction, grams=grams)
+        )
         if gcode is not None:
             z.writestr("Metadata/plate_1.gcode", gcode)
     return path

@@ -54,12 +54,7 @@ def build(params: CardParams | None = None) -> cq.Workplane:
 
     if p.hole:
         hole_x = -p.width / 2 + p.hole_diameter
-        card = (
-            card.faces(">Z")
-            .workplane()
-            .center(hole_x, 0)
-            .hole(p.hole_diameter)
-        )
+        card = card.faces(">Z").workplane().center(hole_x, 0).hole(p.hole_diameter)
 
     if p.text:
         text_solid = (

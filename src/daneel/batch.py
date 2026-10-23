@@ -103,9 +103,7 @@ def run(
         params, build = params_from_mapping(part, row)
         filename = row.get("out") or f"{part}_{i:03d}.{fmt}"
         path = export(build(params), out_root / filename)
-        manifest.append(
-            {"index": i, "part": part, "output": str(path), "params": vars(params)}
-        )
+        manifest.append({"index": i, "part": part, "output": str(path), "params": vars(params)})
 
     (out_root / "manifest.json").write_text(json.dumps(manifest, indent=2))
     return manifest
