@@ -250,6 +250,7 @@ daneel/
 │   ├── export.py       # STL/STEP/3MF export
 │   ├── config.py       # printer/slicer configuration
 │   └── cli.py          # command-line entry point
+├── docs/               # calibration notes; spec_*.md = sourced LEGO/Technic/Duplo/Brio dimensions
 ├── examples/           # example batch specs (CSV/YAML)
 ├── output/             # generated artifacts (git-ignored)
 └── pyproject.toml
