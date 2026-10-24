@@ -11,7 +11,7 @@ EXAMPLES = Path(__file__).resolve().parent.parent / "examples"
 
 
 def test_registry_lists_stock_parts():
-    assert registry.available() == ["box", "bracket", "calib_cube", "card"]
+    assert registry.available() == ["box", "bracket", "calib_cube", "card", "jar"]
 
 
 def test_coerce_types():

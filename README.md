@@ -28,7 +28,7 @@ version-controllable, and batchable.
 
 ### Phase 1 — Parametric part library ✅
 - [x] CadQuery-based part definitions (`src/daneel/parts/`) — each is a `build(params)` function
-- [x] Stock parts: labelled tag (`card`), open-top box, L-bracket with mounting holes
+- [x] Stock parts: labelled tag (`card`), open-top box, L-bracket with mounting holes, screw-top `jar`
 - [x] Part registry (`daneel list`) — register a new part with one line
 - [x] Parameter validation + sensible defaults per part
 - [ ] More stock parts: spacers, cable clips, drawer inserts, hooks
@@ -74,6 +74,23 @@ fixed) a bracket geometry bug where vertical-leg holes severed the leg.
 - [ ] Config file for printer IP / access code / serial
 - [ ] Optional web UI for triggering parametric prints
 - [ ] Preview renders (PNG) before committing to a print
+
+## Screw-top jar
+
+`jar` builds a cylindrical container and a threaded lid from one parameter set, so they always
+fit. Threads are a trapezoid swept along a helix (shallow flanks, no supports). `clearance`
+(default 0.3 mm) is the printer-specific fit allowance: print the short thread-only pair first
+and tune it before committing to a full jar.
+
+```bash
+daneel make jar -s piece=test      # ~2.5-pitch neck + matching lid ring; print this first
+daneel make jar                    # body and lid side by side
+daneel make jar -s piece=lid -s clearance=0.4
+```
+
+OCC booleans with helical faces can silently drop an operand, so thread unions use a fuzzy
+tolerance and fail loudly if the volume does not grow. The tests check fit by moving the lid
+along the helix (zero overlap) and off it (collision).
 
 ## Adding a part
 
@@ -161,7 +178,9 @@ daneel/
 │   ├── parts/          # parametric CadQuery part definitions
 │   │   ├── card.py     # labelled tag
 │   │   ├── box.py      # open-top box / container
-│   │   └── bracket.py  # L-bracket with mounting holes
+│   │   ├── bracket.py  # L-bracket with mounting holes
+│   │   ├── jar.py      # screw-top jar + threaded lid (helical threads)
+│   │   └── threads.py  # helical thread sweep helpers
 │   ├── registry.py     # name -> part lookup (daneel list)
 │   ├── batch.py        # CSV/YAML batch driver + manifest
 │   ├── printlog.py     # append-only print history (daneel log)
