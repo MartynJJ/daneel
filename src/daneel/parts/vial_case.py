@@ -44,6 +44,14 @@ class VialCaseParams:
     push_hole: float = 6.0  # through-hole under each pocket (0 disables)
     grip: int = 24
     gap: float = 8.0
+    pattern: str = "none"  # body wall: none | flutes | hex | diamond | rings
+    lid_pattern: str = "none"  # lid top: none | hex | rings | rays
+    pattern_size: float = 6.0
+    pattern_depth: float = 0.8
+    pattern_gap: float = 1.0
+    lid_text: str = ""
+    text_size: float = 8.0
+    text_depth: float = 0.5
     piece: str = "both"  # both | body | lid
 
     def validate(self) -> None:
@@ -107,6 +115,14 @@ class VialCaseParams:
             clearance=self.jar_clearance,
             grip=self.grip,
             gap=self.gap,
+            pattern=self.pattern,
+            lid_pattern=self.lid_pattern,
+            pattern_size=self.pattern_size,
+            pattern_depth=self.pattern_depth,
+            pattern_gap=self.pattern_gap,
+            lid_text=self.lid_text,
+            text_size=self.text_size,
+            text_depth=self.text_depth,
             piece=piece,
         )
 

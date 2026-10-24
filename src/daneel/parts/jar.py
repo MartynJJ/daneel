@@ -18,6 +18,7 @@ from typing import cast
 
 import cadquery as cq
 
+from daneel.parts.patterns import FACE_PATTERNS, WALL_PATTERNS, face_cutters, wall_cutters
 from daneel.parts.threads import helical_solid, trapezoid
 
 _PIECES = ("both", "body", "lid", "test")
@@ -56,6 +57,14 @@ class JarParams:
     lid_top: float = 2.5  # lid cap thickness
     grip: int = 24  # vertical grip grooves around the lid (0 disables)
     gap: float = 8.0  # spacing between the two pieces on the bed
+    pattern: str = "none"  # body wall: none | flutes | hex | diamond | rings
+    lid_pattern: str = "none"  # lid top: none | hex | rings | rays
+    pattern_size: float = 6.0  # cell width across
+    pattern_depth: float = 0.8
+    pattern_gap: float = 1.0  # ridge left between cells
+    lid_text: str = ""  # engraved on the lid top, reads correctly from outside
+    text_size: float = 8.0
+    text_depth: float = 0.5
     piece: str = "both"  # both | body | lid | test
 
     def validate(self) -> None:
@@ -79,6 +88,20 @@ class JarParams:
             raise ValueError("wall too thick for the diameter")
         if self.grip < 0 or self.gap < 0:
             raise ValueError("grip and gap must be non-negative")
+        if self.pattern not in WALL_PATTERNS:
+            raise ValueError(f"pattern must be one of {', '.join(WALL_PATTERNS)}")
+        if self.lid_pattern not in FACE_PATTERNS:
+            raise ValueError(f"lid_pattern must be one of {', '.join(FACE_PATTERNS)}")
+        if not 0.3 <= self.pattern_depth <= 1.2 or self.pattern_size < 3 or self.pattern_gap < 0.6:
+            raise ValueError("pattern_depth 0.3-1.2, pattern_size >= 3, pattern_gap >= 0.6 mm")
+        if self.pattern != "none" and self.wall - self.pattern_depth < 2.0:
+            raise ValueError("pattern_depth leaves under 2 mm of body wall")
+        if (self.lid_pattern != "none" or self.lid_text) and self.lid_top - max(
+            self.pattern_depth, self.text_depth
+        ) < 1.5:
+            raise ValueError("lid_top too thin for the lid pattern or text depth")
+        if self.text_size <= 0 or self.text_depth <= 0:
+            raise ValueError("text_size and text_depth must be positive")
 
 
 def _thread_dims(p: JarParams) -> tuple[float, float, float, float]:
@@ -105,6 +128,11 @@ def _body(p: JarParams, neck_h: float, total_h: float) -> cq.Workplane:
         .edges()
         .chamfer(0.6)
     )
+    cutters = wall_cutters(
+        p.pattern, r, 3.0, shoulder - 1.5, p.pattern_size, p.pattern_depth, p.pattern_gap
+    )
+    if cutters is not None:
+        base = base.cut(cutters)
     tube = (
         cq.Workplane("XY")
         .workplane(offset=shoulder - 0.1)
@@ -143,6 +171,26 @@ def _lid(p: JarParams, neck_h: float) -> cq.Workplane:
     total = p.lid_top + depth
     lid = cq.Workplane("XY").circle(r_lid).extrude(total)
     lid = lid.faces("<Z").edges().chamfer(0.8)
+
+    face = face_cutters(p.lid_pattern, r_lid - 2.5, p.pattern_size, p.pattern_depth, p.pattern_gap)
+    if face is not None:
+        lid = lid.cut(face)
+    if p.lid_text:
+        # The top prints against the bed and is read from underneath, so mirror in X.
+        text = (
+            cq.Workplane("XY")
+            .workplane(offset=-0.1)
+            .text(
+                p.lid_text,
+                p.text_size,
+                p.text_depth + 0.1,
+                combine=False,
+                halign="center",
+                valign="center",
+            )
+            .mirror("YZ")
+        )
+        lid = lid.cut(text)
 
     if p.grip:
         groove_r = 1.0

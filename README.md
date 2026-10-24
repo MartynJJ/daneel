@@ -131,6 +131,20 @@ daneel make vial_case                       # four 16 x 38 mm vials
 daneel make vial_case -s count=3 -s vial_d=22 -s vial_h=45
 ```
 
+## Patterns and lid text
+
+`jar` and `vial_case` take surface patterns that print without supports: every recess has
+45-degree walls (or is a half-round groove). Body wall: `pattern` = `flutes`, `hex` (honeycomb),
+`diamond`, `rings`. Lid top: `lid_pattern` = `hex`, `rings`, `rays`, plus `lid_text` engraved so it
+reads correctly from outside. The lid top prints against the bed, so only V-shaped recesses are
+used there. Patterns stay below the thread shoulder and off the lid skirt, so the fit is unchanged
+(the tests screw a patterned lid on). `pattern_depth` is capped by the wall thickness.
+
+```bash
+daneel make vial_case -s pattern=hex -s lid_pattern=rays
+daneel make jar -s pattern=flutes -s lid_text="BPC-157"
+```
+
 ## Adding a part
 
 A part is just a module in `src/daneel/parts/` exposing a `build(params)` that returns a CadQuery
@@ -223,6 +237,7 @@ daneel/
 │   │   ├── hinge.py    # print-in-place hinge
 │   │   ├── vial_holder.py  # tiered vial rack + fit gauge
 │   │   ├── vial_case.py  # screw-top case with moulded vial pockets
+│   │   ├── patterns.py  # printable wall/lid pattern cutters
 │   │   └── threads.py  # helical thread sweep helpers
 │   ├── registry.py     # name -> part lookup (daneel list)
 │   ├── batch.py        # CSV/YAML batch driver + manifest
