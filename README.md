@@ -28,7 +28,7 @@ version-controllable, and batchable.
 
 ### Phase 1 — Parametric part library ✅
 - [x] CadQuery-based part definitions (`src/daneel/parts/`) — each is a `build(params)` function
-- [x] Stock parts: labelled tag (`card`), open-top box, L-bracket with mounting holes, screw-top `jar`
+- [x] Stock parts: labelled tag (`card`), open-top box, L-bracket with mounting holes, screw-top `jar`, board `enclosure` with snap lid, print-in-place `hinge`
 - [x] Part registry (`daneel list`) — register a new part with one line
 - [x] Parameter validation + sensible defaults per part
 - [ ] More stock parts: spacers, cable clips, drawer inserts, hooks
@@ -91,6 +91,24 @@ daneel make jar -s piece=lid -s clearance=0.4
 OCC booleans with helical faces can silently drop an operand, so thread unions use a fuzzy
 tolerance and fail loudly if the volume does not grow. The tests check fit by moving the lid
 along the helix (zero overlap) and off it (collision).
+
+## Board enclosure and print-in-place hinge
+
+`enclosure` wraps a board: standoffs at the mounting holes, port cutouts and a lid that clicks
+in with 45-degree detents (no supports; lid prints plate-down). `board` picks a preset
+(`pi4`, `pi_zero`) or `custom` with `board_length`, `board_width`, `hole_dx/dy`. The presets
+are from memory of the published drawings and are unverified: check your board first. The tests
+check that the lid seats with zero overlap, resists being lifted off the detent, and that a
+board-shaped slab clears the walls, pins and lid.
+
+`hinge` prints already assembled and flat: leaf A carries the pin, leaf B's knuckles run loose
+on it. `clearance` (radial) and `axial_gap` are the fit. A living hinge is deliberately not
+offered: it needs PETG or TPU, and PLA cracks across the layers.
+
+```bash
+daneel make enclosure -s board=pi4
+daneel make hinge -s clearance=0.4
+```
 
 ## Adding a part
 
@@ -180,6 +198,8 @@ daneel/
 │   │   ├── box.py      # open-top box / container
 │   │   ├── bracket.py  # L-bracket with mounting holes
 │   │   ├── jar.py      # screw-top jar + threaded lid (helical threads)
+│   │   ├── enclosure.py  # board enclosure, standoffs, ports, snap-fit lid
+│   │   ├── hinge.py    # print-in-place hinge
 │   │   └── threads.py  # helical thread sweep helpers
 │   ├── registry.py     # name -> part lookup (daneel list)
 │   ├── batch.py        # CSV/YAML batch driver + manifest

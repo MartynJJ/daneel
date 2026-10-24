@@ -16,6 +16,8 @@ _PARTS: dict[str, tuple[str, str, str]] = {
     "bracket": ("daneel.parts.bracket", "BracketParams", "build"),
     "calib_cube": ("daneel.parts.calib_cube", "CalibCubeParams", "build"),
     "jar": ("daneel.parts.jar", "JarParams", "build"),
+    "enclosure": ("daneel.parts.enclosure", "EnclosureParams", "build"),
+    "hinge": ("daneel.parts.hinge", "HingeParams", "build"),
 }
 
 
