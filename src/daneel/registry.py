@@ -19,6 +19,7 @@ _PARTS: dict[str, tuple[str, str, str]] = {
     "enclosure": ("daneel.parts.enclosure", "EnclosureParams", "build"),
     "hinge": ("daneel.parts.hinge", "HingeParams", "build"),
     "vial_holder": ("daneel.parts.vial_holder", "VialHolderParams", "build"),
+    "vial_case": ("daneel.parts.vial_case", "VialCaseParams", "build"),
 }
 
 

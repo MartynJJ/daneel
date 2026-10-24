@@ -28,7 +28,7 @@ version-controllable, and batchable.
 
 ### Phase 1 — Parametric part library ✅
 - [x] CadQuery-based part definitions (`src/daneel/parts/`) — each is a `build(params)` function
-- [x] Stock parts: labelled tag (`card`), open-top box, L-bracket with mounting holes, screw-top `jar`, board `enclosure` with snap lid, print-in-place `hinge`, tiered `vial_holder`
+- [x] Stock parts: labelled tag (`card`), open-top box, L-bracket with mounting holes, screw-top `jar`, board `enclosure` with snap lid, print-in-place `hinge`, tiered `vial_holder`, screw-top `vial_case`
 - [x] Part registry (`daneel list`) — register a new part with one line
 - [x] Parameter validation + sensible defaults per part
 - [ ] More stock parts: spacers, cable clips, drawer inserts, hooks
@@ -119,6 +119,16 @@ Without calipers, print the gauge first and see which hole your vial slips into:
 ```bash
 daneel make vial_holder -s piece=gauge        # 7 holes, 0.3 mm apart, sizes engraved
 daneel make vial_holder -s vial_d=16 -s cols=5 -s rows=2
+```
+
+`vial_case` is the closed version: a threaded jar (the proven `jar` geometry) with upright vial
+pockets moulded into the floor and a screw lid. It sizes itself from the vial: `count` pockets
+(1-6, a 2 x 2 square for four) sit on a circle, and the body is tall enough that the vial tops
+clear the lid.
+
+```bash
+daneel make vial_case                       # four 16 x 38 mm vials
+daneel make vial_case -s count=3 -s vial_d=22 -s vial_h=45
 ```
 
 ## Adding a part
@@ -212,6 +222,7 @@ daneel/
 │   │   ├── enclosure.py  # board enclosure, standoffs, ports, snap-fit lid
 │   │   ├── hinge.py    # print-in-place hinge
 │   │   ├── vial_holder.py  # tiered vial rack + fit gauge
+│   │   ├── vial_case.py  # screw-top case with moulded vial pockets
 │   │   └── threads.py  # helical thread sweep helpers
 │   ├── registry.py     # name -> part lookup (daneel list)
 │   ├── batch.py        # CSV/YAML batch driver + manifest

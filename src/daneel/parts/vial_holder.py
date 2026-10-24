@@ -63,9 +63,10 @@ class VialHolderParams:
         return self.vial_d + 2 * self.clearance
 
 
-def _pocket(
-    p: VialHolderParams, x: float, y: float, bottom: float, top: float, hole_d: float
+def pocket(
+    lead_in: float, x: float, y: float, bottom: float, top: float, hole_d: float
 ) -> cq.Workplane:
+    """Cylindrical pocket from ``bottom`` to ``top`` with a 45-degree lead-in chamfer."""
     cyl = (
         cq.Workplane("XY")
         .workplane(offset=bottom)
@@ -73,12 +74,12 @@ def _pocket(
         .circle(hole_d / 2)
         .extrude(top - bottom + 1)
     )
-    if p.lead_in:
+    if lead_in:
         cone = cq.Solid.makeCone(
             hole_d / 2,
-            hole_d / 2 + p.lead_in,
-            p.lead_in,
-            cq.Vector(x, y, top - p.lead_in),
+            hole_d / 2 + lead_in,
+            lead_in,
+            cq.Vector(x, y, top - lead_in),
             cq.Vector(0, 0, 1),
         )
         cyl = cyl.union(cq.Workplane("XY").add(cone))
@@ -113,7 +114,7 @@ def _holder(p: VialHolderParams) -> cq.Workplane:
         y = p.wall + r * pitch + hd / 2
         for c in range(p.cols):
             x = p.wall + c * pitch + hd / 2
-            body = body.cut(_pocket(p, x, y, bottom, top, hd))
+            body = body.cut(pocket(p.lead_in, x, y, bottom, top, hd))
             if p.push_hole:
                 hole = cq.Workplane("XY").center(x, y).circle(p.push_hole / 2).extrude(bottom + 0.1)
                 body = body.cut(hole)
