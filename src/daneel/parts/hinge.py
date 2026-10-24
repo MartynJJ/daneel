@@ -25,7 +25,7 @@ class HingeParams:
     knuckle_length: float = 8.0
     barrel_d: float = 8.0
     pin_d: float = 3.6
-    clearance: float = 0.35  # radial gap between the pin and leaf B's bores
+    clearance: float = 0.3  # radial gap between the pin and leaf B's bores
     axial_gap: float = 0.5  # gap between neighbouring knuckles
     leaf_width: float = 20.0  # from the barrel centreline outward
     leaf_thickness: float = 3.0

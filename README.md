@@ -107,7 +107,7 @@ offered: it needs PETG or TPU, and PLA cracks across the layers.
 
 ```bash
 daneel make enclosure -s board=pi4
-daneel make hinge -s clearance=0.4
+daneel make hinge -s clearance=0.35
 ```
 
 ## Adding a part
