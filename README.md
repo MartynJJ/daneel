@@ -133,15 +133,16 @@ daneel make vial_case -s count=3 -s vial_d=22 -s vial_h=45
 
 ## Helmet light mount
 
-`light_mount`: a thin glue-down plate with a click block that fits the recess on the back of a clip-on bike light.
-The block width is an estimate of the recess (`slot_w`, default 11 mm), so print `-s piece=test` first: three
-blocks a little under, at and over the estimate; the one that clicks in gives the real `slot_w`. The plate is flat
-unless `helmet_radius` is set (curved underside; needs a thicker `plate_t` and supports). Stick it down with
-3M VHB tape rather than solvent glue, and print in PETG or ASA: PLA softens in a hot car.
+`light_mount`: a thin glue-down plate with a T-slot block for a clip-on light whose back carries a T-shaped
+post (square head on a narrower neck). The light slides sideways under the lip and stops against a wall.
+The post was measured from photos plus one caliper reading (`head_w` 17 mm); `head_l`, `head_t`, `neck_w`
+and `neck_h` are estimates, so print `-s piece=test` first: three short slots at stepped clearances.
+The plate is flat unless `helmet_radius` is set (curved underside; needs a thicker `plate_t` and supports).
+Stick it down with 3M VHB tape rather than solvent glue, and print in PETG or ASA: PLA softens in a hot car.
 
 ```bash
 daneel make light_mount -s piece=test
-daneel make light_mount -s slot_w=11.4
+daneel make light_mount -s head_l=15.2 -s clearance=0.25
 ```
 
 ## Patterns and lid text

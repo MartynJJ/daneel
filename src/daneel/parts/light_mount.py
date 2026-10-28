@@ -1,10 +1,12 @@
-"""Helmet mount for a clip-on bike light: a thin glue-down plate carrying the clip block.
+"""Helmet mount for a clip-on light that has a T-shaped post on its back.
 
-The light's own strap mount was not measured, so the block is sized from an estimate of the
-light's square recess (``slot_w``). Print ``piece=test`` first: three blocks a little under,
-at, and over the estimate on one strip; the one that slides in with a click tells you the
-real ``slot_w``. The plate is flat unless ``helmet_radius`` is set; a curved underside needs
-supports, so a thin flexible plate on 1 mm VHB tape is the support-free route.
+The light slides sideways into a T-slot: a wide chamber holds the post's head under a lip, a
+narrow slot lets the neck through, and a stop wall at the far end halts it. The post was
+measured from photos and one caliper reading, so print ``piece=test`` first: three short
+slots at different clearances on one strip; keep the one that slides in snugly.
+
+The plate is flat unless ``helmet_radius`` is set; a curved underside needs supports, so a
+thin flexible plate on 1 mm VHB tape is the support-free route.
 
 Run directly to export an STL::
 
@@ -21,67 +23,87 @@ import cadquery as cq
 
 @dataclass
 class LightMountParams:
-    """Parameters for a light-clip helmet mount. All dimensions in millimetres."""
+    """Parameters for a T-slot helmet mount. All dimensions in millimetres."""
 
-    slot_w: float = 11.0  # estimated width of the recess on the light's back
-    clearance: float = 0.25  # total per-side slack between block and recess
-    block_l: float = 16.0
-    block_h: float = 3.0
-    bump_d: float = 2.4  # click bumps on the block's top face
-    bump_h: float = 0.8
-    bump_gap: float = 7.0  # bump centre spacing along the block
-    plate_l: float = 40.0
-    plate_w: float = 26.0
+    head_w: float = 17.0  # post head width, across the slide direction (caliper reading)
+    head_l: float = 16.0  # post head length, along the slide direction (estimated)
+    head_t: float = 1.8  # post head thickness (estimated)
+    neck_w: float = 12.0  # widest dimension of the post's neck (estimated)
+    neck_h: float = 3.3  # light back to underside of the head (estimated)
+    clearance: float = 0.3  # per side, head chamber and neck slot
+    z_clearance: float = 0.2  # vertical play of the head in its chamber
+    wall: float = 2.0  # side walls and stop wall
+    block_l: float = 25.0
+    plate_w: float = 32.0
     plate_t: float = 1.6
     corner_r: float = 4.0
     helmet_radius: float = 0.0  # 0 = flat; else concave spherical underside
     piece: str = "mount"  # mount | test
-    test_step: float = 0.4  # width difference between the test blocks
+    test_step: float = 0.15  # clearance difference between the test slots
 
     def validate(self) -> None:
         if self.piece not in ("mount", "test"):
             raise ValueError("piece must be 'mount' or 'test'")
-        if self.slot_w < 6 or self.block_l < 8 or self.block_h < 1.5:
-            raise ValueError("slot_w >= 6, block_l >= 8, block_h >= 1.5")
-        if not 0 <= self.clearance <= 0.8:
-            raise ValueError("clearance must be between 0 and 0.8 mm")
-        if self.bump_d + 1 > self.slot_w - 2 * self.clearance or self.bump_h >= self.block_h:
-            raise ValueError("bumps must fit on the block face and be lower than the block")
-        if self.bump_gap + self.bump_d > self.block_l - 3:
-            raise ValueError("bumps do not fit along block_l")
+        if min(self.head_w, self.head_l, self.head_t, self.neck_w, self.neck_h) <= 0:
+            raise ValueError("post dimensions must be positive")
+        if self.neck_w >= self.head_w - 2:
+            raise ValueError("neck_w must be at least 2 mm narrower than head_w")
+        if self.neck_h <= self.z_clearance + 1.0:
+            raise ValueError("neck_h must exceed z_clearance by at least 1 mm (lip thickness)")
+        if not 0.05 <= self.clearance <= 0.8 or not 0 <= self.z_clearance <= 0.8:
+            raise ValueError("clearance 0.05-0.8 mm, z_clearance 0-0.8 mm")
+        if self.wall < 1.2:
+            raise ValueError("wall must be at least 1.2 mm")
+        if self.block_l < self.head_l + self.wall + 2:
+            raise ValueError("block_l too short for the head plus the stop wall")
         if self.plate_t < 1.2:
             raise ValueError("plate_t must be at least 1.2 mm")
-        if self.plate_w < self.slot_w + 8 or self.plate_l < self.block_l + 8:
-            raise ValueError("plate must overhang the block by at least 4 mm each side")
-        if self.corner_r * 2 >= min(self.plate_w, self.plate_l):
+        if self.plate_w < self._block_w() + 6:
+            raise ValueError("plate_w must overhang the block by at least 3 mm each side")
+        if self.corner_r * 2 >= self.plate_w:
             raise ValueError("corner_r too large")
         if self.helmet_radius and self.helmet_radius < 60:
             raise ValueError("helmet_radius must be 0 (flat) or at least 60 mm")
-        if self.test_step <= 0:
-            raise ValueError("test_step must be positive")
+        if self.test_step <= 0 or self.clearance - self.test_step < 0.05:
+            raise ValueError("test_step must be positive and leave the tightest slot >= 0.05 mm")
+
+    def _block_w(self, clearance: float | None = None) -> float:
+        c = self.clearance if clearance is None else clearance
+        return self.head_w + 2 * c + 2 * self.wall
+
+    def lip_t(self) -> float:
+        return self.neck_h - self.z_clearance
+
+    def chamber_h(self) -> float:
+        return self.head_t + self.z_clearance
+
+    def block_h(self) -> float:
+        return self.chamber_h() + self.lip_t()
 
 
-def _block(p: LightMountParams, width: float, x: float, y: float) -> cq.Workplane:
-    """Click block on top of the plate (z from plate_t), lead-in chamfer on its -X end."""
+def _slot_block(p: LightMountParams, clearance: float, x0: float, y0: float) -> cq.Workplane:
+    """Block with a T-slot open at its -X end, standing on the plate (z from plate_t)."""
+    bw = p._block_w(clearance)
+    bl = p.block_l
     z0 = p.plate_t
-    blk = (
+    blk = cq.Workplane("XY").workplane(offset=z0).center(x0, y0).rect(bl, bw).extrude(p.block_h())
+    cut_l = bl - p.wall + 1.0  # runs out through the open end, stops at the stop wall
+    cx = x0 - bl / 2 + cut_l / 2 - 1.0
+    chamber = (
         cq.Workplane("XY")
         .workplane(offset=z0)
-        .center(x, y)
-        .rect(p.block_l, width)
-        .extrude(p.block_h)
-        .faces("<X")
-        .edges(">Z")
-        .chamfer(min(0.8, p.block_h / 2 - 0.1))
+        .center(cx, y0)
+        .rect(cut_l, p.head_w + 2 * clearance)
+        .extrude(p.chamber_h())
     )
-    for sx in (-1, 1):
-        bump = (
-            cq.Workplane("XY")
-            .sphere(p.bump_d / 2)
-            .translate((x + sx * p.bump_gap / 2, y, z0 + p.block_h - p.bump_d / 2 + p.bump_h))
-        )
-        blk = blk.union(bump)
-    return blk
+    slot = (
+        cq.Workplane("XY")
+        .workplane(offset=z0 + p.chamber_h() - 0.01)
+        .center(cx, y0)
+        .rect(cut_l, p.neck_w + 2 * clearance)
+        .extrude(p.lip_t() + 0.02)
+    )
+    return blk.cut(chamber).cut(slot)
 
 
 def _plate(p: LightMountParams, length: float, width: float) -> cq.Workplane:
@@ -90,7 +112,7 @@ def _plate(p: LightMountParams, length: float, width: float) -> cq.Workplane:
         .rect(length, width)
         .extrude(p.plate_t)
         .edges("|Z")
-        .fillet(min(p.corner_r, width / 2 - 0.1))
+        .fillet(min(p.corner_r, width / 2 - 0.1, length / 2 - 0.1))
     )
     if p.helmet_radius:
         r = p.helmet_radius
@@ -106,16 +128,15 @@ def _plate(p: LightMountParams, length: float, width: float) -> cq.Workplane:
 def build(params: LightMountParams) -> cq.Workplane:
     params.validate()
     p = params
-    w = p.slot_w - 2 * p.clearance
+    plate_l = p.block_l + 8
     if p.piece == "test":
-        widths = [w - p.test_step, w, w + p.test_step]
-        pitch = max(widths) + 5
-        length = p.block_l + 8
-        plate = _plate(p, length, pitch * 3 + 2)
-        for i, bw in enumerate(widths):
-            plate = plate.union(_block(p, bw, 0, (i - 1) * pitch))
+        clearances = [p.clearance - p.test_step, p.clearance, p.clearance + p.test_step]
+        pitch = p._block_w(max(clearances)) + 3
+        plate = _plate(p, plate_l, pitch * 3 + 3)
+        for i, c in enumerate(clearances):
+            plate = plate.union(_slot_block(p, c, 0, (i - 1) * pitch))
         return plate
-    return _plate(p, p.plate_l, p.plate_w).union(_block(p, w, 0, 0))
+    return _plate(p, plate_l, p.plate_w).union(_slot_block(p, p.clearance, 0, 0))
 
 
 if __name__ == "__main__":
