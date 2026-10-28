@@ -131,6 +131,19 @@ daneel make vial_case                       # four 16 x 38 mm vials
 daneel make vial_case -s count=3 -s vial_d=22 -s vial_h=45
 ```
 
+## Helmet light mount
+
+`light_mount`: a thin glue-down plate with a click block that fits the recess on the back of a clip-on bike light.
+The block width is an estimate of the recess (`slot_w`, default 11 mm), so print `-s piece=test` first: three
+blocks a little under, at and over the estimate; the one that clicks in gives the real `slot_w`. The plate is flat
+unless `helmet_radius` is set (curved underside; needs a thicker `plate_t` and supports). Stick it down with
+3M VHB tape rather than solvent glue, and print in PETG or ASA: PLA softens in a hot car.
+
+```bash
+daneel make light_mount -s piece=test
+daneel make light_mount -s slot_w=11.4
+```
+
 ## Patterns and lid text
 
 `jar` and `vial_case` take surface patterns that print without supports: every recess has
@@ -238,6 +251,7 @@ daneel/
 │   │   ├── vial_holder.py  # tiered vial rack + fit gauge
 │   │   ├── vial_case.py  # screw-top case with moulded vial pockets
 │   │   ├── patterns.py  # printable wall/lid pattern cutters
+│   ├── light_mount.py  # helmet mount plate + click block for a clip-on light
 │   │   └── threads.py  # helical thread sweep helpers
 │   ├── registry.py     # name -> part lookup (daneel list)
 │   ├── batch.py        # CSV/YAML batch driver + manifest
