@@ -137,7 +137,7 @@ daneel make vial_case -s count=3 -s vial_d=22 -s vial_h=45
 post (square head on a narrower neck). The light slides sideways under the lip and stops against a wall.
 The post was measured from photos plus one caliper reading (`head_w` 17 mm); `head_l`, `head_t`, `neck_w`
 and `neck_h` are estimates, so print `-s piece=test` first: three short slots at stepped clearances.
-The plate is flat unless `helmet_radius` is set (curved underside; needs a thicker `plate_t` and supports).
+`tab_w` sets the flat wings either side of the block for taping down. The plate is flat unless `helmet_radius` is set (curved underside; needs a thicker `plate_t` and supports).
 Stick it down with 3M VHB tape rather than solvent glue, and print in PETG or ASA: PLA softens in a hot car.
 
 ```bash

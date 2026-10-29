@@ -34,7 +34,7 @@ class LightMountParams:
     z_clearance: float = 0.2  # vertical play of the head in its chamber
     wall: float = 2.0  # side walls and stop wall
     block_l: float = 25.0
-    plate_w: float = 32.0
+    tab_w: float = 10.0  # flat wing each side of the block, for tape
     plate_t: float = 1.6
     corner_r: float = 4.0
     helmet_radius: float = 0.0  # 0 = flat; else concave spherical underside
@@ -58,9 +58,9 @@ class LightMountParams:
             raise ValueError("block_l too short for the head plus the stop wall")
         if self.plate_t < 1.2:
             raise ValueError("plate_t must be at least 1.2 mm")
-        if self.plate_w < self._block_w() + 6:
-            raise ValueError("plate_w must overhang the block by at least 3 mm each side")
-        if self.corner_r * 2 >= self.plate_w:
+        if self.tab_w < 3:
+            raise ValueError("tab_w must be at least 3 mm")
+        if self.corner_r * 2 >= self.block_l:
             raise ValueError("corner_r too large")
         if self.helmet_radius and self.helmet_radius < 60:
             raise ValueError("helmet_radius must be 0 (flat) or at least 60 mm")
@@ -136,7 +136,7 @@ def build(params: LightMountParams) -> cq.Workplane:
         for i, c in enumerate(clearances):
             plate = plate.union(_slot_block(p, c, 0, (i - 1) * pitch))
         return plate
-    return _plate(p, plate_l, p.plate_w).union(_slot_block(p, p.clearance, 0, 0))
+    return _plate(p, plate_l, p._block_w() + 2 * p.tab_w).union(_slot_block(p, p.clearance, 0, 0))
 
 
 if __name__ == "__main__":

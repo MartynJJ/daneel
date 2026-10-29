@@ -53,7 +53,13 @@ def test_post_is_held_by_the_lip():
 
 
 def test_wider_head_makes_wider_block():
-    assert _solid(head_w=19.0, plate_w=34.0).BoundingBox().ylen >= 0
+    assert _solid(head_w=19.0).BoundingBox().ylen > _solid().BoundingBox().ylen
+
+
+def test_tabs_widen_the_plate():
+    assert _solid(tab_w=14.0).BoundingBox().ylen == pytest.approx(
+        _solid(tab_w=10.0).BoundingBox().ylen + 8, abs=0.05
+    )
 
 
 def test_test_strip_has_three_slots():
@@ -62,8 +68,8 @@ def test_test_strip_has_three_slots():
 
 
 def test_curved_underside_removes_material():
-    flat = _solid(plate_t=4.0).Volume()
-    curved = _solid(plate_t=4.0, helmet_radius=110.0).Volume()
+    flat = _solid(plate_t=5.0).Volume()
+    curved = _solid(plate_t=5.0, helmet_radius=110.0).Volume()
     assert curved < flat
 
 
@@ -76,6 +82,7 @@ def test_curved_underside_removes_material():
         {"neck_h": 1.0},
         {"block_l": 12.0},
         {"plate_t": 1.0},
+        {"tab_w": 1.0},
         {"helmet_radius": 30.0},
         {"helmet_radius": 110.0},
     ],
