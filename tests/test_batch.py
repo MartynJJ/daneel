@@ -20,6 +20,7 @@ def test_registry_lists_stock_parts():
         "hinge",
         "jar",
         "light_mount",
+        "nut_cover",
         "vial_case",
         "vial_holder",
     ]

@@ -145,6 +145,18 @@ daneel make light_mount -s piece=test
 daneel make light_mount -s head_l=15.2 -s clearance=0.25
 ```
 
+## Nut cover
+
+`nut_cover`: a hex cap for an exposed nut, built to print upside down with no supports: the closed end lies on the
+bed, the pocket opens upward, and the round flange at the open end flares on a 45 degree cone. Defaults are an M14
+scooter axle nut (21.3 mm pocket across flats, 16.8 mm deep, 20.6 mm tall, 35 mm flange) estimated from the toolpaths
+of an existing cover, so check `nut_af` and `pocket_depth` against the real nut. `count` prints several per plate.
+
+```bash
+daneel make nut_cover -s count=2
+daneel make nut_cover -s nut_af=22.3      # 22 mm AF scooters
+```
+
 ## Patterns and lid text
 
 `jar` and `vial_case` take surface patterns that print without supports: every recess has
@@ -253,6 +265,7 @@ daneel/
 │   │   ├── vial_case.py  # screw-top case with moulded vial pockets
 │   │   ├── patterns.py  # printable wall/lid pattern cutters
 │   ├── light_mount.py  # helmet mount plate + click block for a clip-on light
+│   ├── nut_cover.py  # hex nut cap, printed closed-end-down
 │   │   └── threads.py  # helical thread sweep helpers
 │   ├── registry.py     # name -> part lookup (daneel list)
 │   ├── batch.py        # CSV/YAML batch driver + manifest
