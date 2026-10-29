@@ -8,10 +8,10 @@
 	"sliced_plates": [
 		{
 			"id": 1,
-			"sliced_time": 0,
-			"sliced_time_with_cache": 0,
-			"triangle_count": 572,
-			"warning_message": ""
+			"sliced_time": 1,
+			"sliced_time_with_cache": 1,
+			"triangle_count": 634,
+			"warning_message": "It seems object light_mount.stl has floating cantilever. Please re-orient the object or enable support generation."
 		}
 	],
 	"sparse_infill_density": 20.0,

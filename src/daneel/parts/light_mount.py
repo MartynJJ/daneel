@@ -37,7 +37,7 @@ class LightMountParams:
     tab_w: float = 20.0  # flat wing each side of the block, for tape
     plate_t: float = 1.6
     corner_r: float = 4.0
-    helmet_radius: float = 0.0  # 0 = flat; else concave spherical underside
+    helmet_radius: float = 300.0  # 0 = flat; else underside curved across the tabs to this radius
     piece: str = "mount"  # mount | test
     test_step: float = 0.15  # clearance difference between the test slots
 
@@ -62,14 +62,26 @@ class LightMountParams:
             raise ValueError("tab_w must be at least 3 mm")
         if self.corner_r * 2 >= self.block_l:
             raise ValueError("corner_r too large")
-        if self.helmet_radius and self.helmet_radius < 60:
-            raise ValueError("helmet_radius must be 0 (flat) or at least 60 mm")
+        if self.helmet_radius and self.helmet_radius < 1.5 * self._block_w() / 2 + 1.5 * self.tab_w:
+            raise ValueError(
+                "helmet_radius is too tight for the tab span; use 0 or a larger radius"
+            )
         if self.test_step <= 0 or self.clearance - self.test_step < 0.05:
             raise ValueError("test_step must be positive and leave the tightest slot >= 0.05 mm")
 
     def _block_w(self, clearance: float | None = None) -> float:
         c = self.clearance if clearance is None else clearance
         return self.head_w + 2 * c + 2 * self.wall
+
+    def sag(self, width: float) -> float:
+        """Drop of the curved underside at the tab edges; the top is raised by this much."""
+        if not self.helmet_radius:
+            return 0.0
+        r, half = self.helmet_radius, width / 2
+        return r - math.sqrt(r * r - half * half)
+
+    def top(self, width: float) -> float:
+        return self.plate_t + self.sag(width)
 
     def lip_t(self) -> float:
         return self.neck_h - self.z_clearance
@@ -81,11 +93,12 @@ class LightMountParams:
         return self.chamber_h() + self.lip_t()
 
 
-def _slot_block(p: LightMountParams, clearance: float, x0: float, y0: float) -> cq.Workplane:
+def _slot_block(
+    p: LightMountParams, clearance: float, x0: float, y0: float, z0: float
+) -> cq.Workplane:
     """Block with a T-slot open at its -X end, standing on the plate (z from plate_t)."""
     bw = p._block_w(clearance)
     bl = p.block_l
-    z0 = p.plate_t
     blk = cq.Workplane("XY").workplane(offset=z0).center(x0, y0).rect(bl, bw).extrude(p.block_h())
     cut_l = bl - p.wall + 1.0  # runs out through the open end, stops at the stop wall
     cx = x0 - bl / 2 + cut_l / 2 - 1.0
@@ -107,20 +120,23 @@ def _slot_block(p: LightMountParams, clearance: float, x0: float, y0: float) -> 
 
 
 def _plate(p: LightMountParams, length: float, width: float) -> cq.Workplane:
+    top = p.top(width)
     plate = (
         cq.Workplane("XY")
         .rect(length, width)
-        .extrude(p.plate_t)
+        .extrude(top)
         .edges("|Z")
         .fillet(min(p.corner_r, width / 2 - 0.1, length / 2 - 0.1))
     )
     if p.helmet_radius:
         r = p.helmet_radius
-        reach = math.hypot(length, width) / 2
-        sag = r - math.sqrt(r * r - reach * reach)
-        if p.plate_t - sag < 1.2:
-            raise ValueError(f"plate_t must be at least {sag + 1.2:.1f} mm for this helmet_radius")
-        helmet = cq.Workplane("XY").sphere(r).translate((0, 0, sag - r))
+        helmet = (
+            cq.Workplane("YZ")
+            .workplane(offset=-length / 2 - 1)
+            .circle(r)
+            .extrude(length + 2)
+            .translate((0, 0, p.sag(width) - r))
+        )
         plate = plate.cut(helmet)
     return plate
 
@@ -132,11 +148,13 @@ def build(params: LightMountParams) -> cq.Workplane:
     if p.piece == "test":
         clearances = [p.clearance - p.test_step, p.clearance, p.clearance + p.test_step]
         pitch = p._block_w(max(clearances)) + 3
-        plate = _plate(p, plate_l, pitch * 3 + 3)
+        width = pitch * 3 + 3
+        plate = _plate(p, plate_l, width)
         for i, c in enumerate(clearances):
-            plate = plate.union(_slot_block(p, c, 0, (i - 1) * pitch))
+            plate = plate.union(_slot_block(p, c, 0, (i - 1) * pitch, p.top(width)))
         return plate
-    return _plate(p, plate_l, p._block_w() + 2 * p.tab_w).union(_slot_block(p, p.clearance, 0, 0))
+    width = p._block_w() + 2 * p.tab_w
+    return _plate(p, plate_l, width).union(_slot_block(p, p.clearance, 0, 0, p.top(width)))
 
 
 if __name__ == "__main__":

@@ -12,7 +12,7 @@ def _solid(**kw):
 
 def _post(p: LightMountParams, x: float) -> cq.Workplane:
     """The light's T-post (head over neck), head underside at z, neck going up to the lip top."""
-    z_head = p.plate_t + p.z_clearance / 2
+    z_head = p.top(p._block_w() + 2 * p.tab_w) + p.z_clearance / 2
     head = (
         cq.Workplane("XY")
         .workplane(offset=z_head)
@@ -67,10 +67,19 @@ def test_test_strip_has_three_slots():
     assert s.isValid() and len(s.Solids()) == 1
 
 
-def test_curved_underside_removes_material():
-    flat = _solid(plate_t=4.0).Volume()
-    curved = _solid(plate_t=4.0, helmet_radius=300.0).Volume()
-    assert curved < flat
+def test_curved_underside_follows_the_radius():
+    flat = _solid(helmet_radius=0.0).BoundingBox()
+    curved = _solid().BoundingBox()
+    p = LightMountParams()
+    width = p._block_w() + 2 * p.tab_w
+    assert curved.zlen == pytest.approx(flat.zlen + p.sag(width), abs=0.05)
+    assert 0 < p.sag(width) < 3.0
+
+
+def test_post_slides_in_on_flat_variant():
+    p = LightMountParams(helmet_radius=0.0)
+    inter = build(p).intersect(_post(p, 0.0), tol=1e-4)
+    assert not inter.vals() or inter.val().Volume() < 0.5
 
 
 @pytest.mark.parametrize(
@@ -84,7 +93,6 @@ def test_curved_underside_removes_material():
         {"plate_t": 1.0},
         {"tab_w": 1.0},
         {"helmet_radius": 30.0},
-        {"helmet_radius": 110.0},
     ],
 )
 def test_rejects_bad_params(kw):
