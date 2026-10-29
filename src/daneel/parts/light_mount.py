@@ -31,7 +31,7 @@ class LightMountParams:
     neck_w: float = 12.0  # widest dimension of the post's neck (estimated)
     neck_h: float = 3.3  # light back to underside of the head (estimated)
     clearance: float = 0.3  # per side, head chamber and neck slot
-    z_clearance: float = 0.2  # vertical play of the head in its chamber
+    z_clearance: float = 0.3  # vertical play of the head in its chamber
     wall: float = 2.0  # side walls and stop wall
     block_l: float = 25.0
     tab_w: float = 20.0  # flat wing each side of the block, for tape
