@@ -68,9 +68,9 @@ def test_test_strip_has_three_slots():
 
 
 def test_curved_underside_follows_the_radius():
-    flat = _solid(helmet_radius=0.0).BoundingBox()
-    curved = _solid().BoundingBox()
-    p = LightMountParams()
+    flat = _solid().BoundingBox()
+    curved = _solid(helmet_radius=300.0).BoundingBox()
+    p = LightMountParams(helmet_radius=300.0)
     width = p._block_w() + 2 * p.tab_w
     assert curved.zlen == pytest.approx(flat.zlen + p.sag(width), abs=0.05)
     assert 0 < p.sag(width) < 3.0

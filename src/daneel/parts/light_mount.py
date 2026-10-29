@@ -37,7 +37,9 @@ class LightMountParams:
     tab_w: float = 20.0  # flat wing each side of the block, for tape
     plate_t: float = 1.6
     corner_r: float = 4.0
-    helmet_radius: float = 300.0  # 0 = flat; else underside curved across the tabs to this radius
+    helmet_radius: float = (
+        0.0  # 0 = flat; else underside curved across the tabs (edges-only bed contact)
+    )
     piece: str = "mount"  # mount | test
     test_step: float = 0.15  # clearance difference between the test slots
 
