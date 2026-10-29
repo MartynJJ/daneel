@@ -8,8 +8,8 @@
 	"sliced_plates": [
 		{
 			"id": 1,
-			"sliced_time": 1,
-			"sliced_time_with_cache": 1,
+			"sliced_time": 0,
+			"sliced_time_with_cache": 0,
 			"triangle_count": 572,
 			"warning_message": ""
 		}

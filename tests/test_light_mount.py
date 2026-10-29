@@ -68,8 +68,8 @@ def test_test_strip_has_three_slots():
 
 
 def test_curved_underside_removes_material():
-    flat = _solid(plate_t=5.0).Volume()
-    curved = _solid(plate_t=5.0, helmet_radius=110.0).Volume()
+    flat = _solid(plate_t=4.0).Volume()
+    curved = _solid(plate_t=4.0, helmet_radius=300.0).Volume()
     assert curved < flat
 
 

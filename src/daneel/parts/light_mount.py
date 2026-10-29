@@ -34,7 +34,7 @@ class LightMountParams:
     z_clearance: float = 0.2  # vertical play of the head in its chamber
     wall: float = 2.0  # side walls and stop wall
     block_l: float = 25.0
-    tab_w: float = 10.0  # flat wing each side of the block, for tape
+    tab_w: float = 20.0  # flat wing each side of the block, for tape
     plate_t: float = 1.6
     corner_r: float = 4.0
     helmet_radius: float = 0.0  # 0 = flat; else concave spherical underside
