@@ -150,7 +150,7 @@ daneel make light_mount -s head_l=15.2 -s clearance=0.25
 `nut_cover`: a hex cap for an exposed nut, built to print upside down with no supports: the closed end lies on the
 bed, the pocket opens upward, and the round flange at the open end flares on a 45 degree cone. Defaults are an M14
 scooter axle nut (21.3 mm pocket across flats, 16.8 mm deep, 20.6 mm tall, 35 mm flange) estimated from the toolpaths
-of an existing cover, so check `nut_af` and `pocket_depth` against the real nut. `count` prints several per plate.
+of an existing cover, so check `nut_af` and `pocket_depth` against the real nut. `count` prints several per plate. Pocket flats carry small crush ribs (`rib_h`, `rib_w`; `rib_h=0` for none).
 
 ```bash
 daneel make nut_cover -s count=2

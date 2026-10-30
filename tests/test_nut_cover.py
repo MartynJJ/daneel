@@ -28,7 +28,7 @@ def test_closed_end_is_on_the_bed():
 
 
 def test_nut_fits_in_pocket():
-    p = NutCoverParams()
+    p = NutCoverParams(rib_h=0)
     nut = (
         cq.Workplane("XY")
         .polygon(6, 21.0 / math.cos(math.radians(30)))
@@ -37,6 +37,21 @@ def test_nut_fits_in_pocket():
     )
     inter = build(p).intersect(nut, tol=1e-4)
     assert not inter.vals() or inter.val().Volume() < 0.5
+
+
+def test_ribs_crush_the_nut_lightly():
+    p = NutCoverParams()
+    plain = build(NutCoverParams(rib_h=0)).val().Volume()
+    ribbed = build(p).val().Volume()
+    assert build(p).val().isValid() and ribbed > plain
+    nut = (
+        cq.Workplane("XY")
+        .polygon(6, 21.0 / math.cos(math.radians(30)))
+        .extrude(p.pocket_depth - 0.5)
+        .translate((0, 0, p.height - p.pocket_depth))
+    )
+    inter = build(p).intersect(nut, tol=1e-4)
+    assert 0 < inter.val().Volume() < 60
 
 
 def test_flange_overhang_is_at_most_45_degrees():
@@ -63,6 +78,7 @@ def test_count_makes_separate_caps():
         {"flange_d": 30.0},
         {"flange_t": 3.0},
         {"count": 9},
+        {"rib_h": 1.0},
         {"gap": 1.0},
     ],
 )

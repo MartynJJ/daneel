@@ -22,13 +22,15 @@ import cadquery as cq
 class NutCoverParams:
     """Parameters for a hex nut cap. All dimensions in millimetres."""
 
-    nut_af: float = 21.3  # pocket across flats (M14 nut is 21 mm AF plus slack)
+    nut_af: float = 21.2  # pocket across flats (M14 nut is 21 mm AF plus slack)
     outer_af: float = 27.5  # outer hex across flats
     height: float = 20.6
     pocket_depth: float = 16.8
     flange_d: float = 35.0  # round skirt at the open end
     flange_t: float = 6.3
     lead_in: float = 0.8  # chamfer at the pocket mouth
+    rib_h: float = 0.3  # grip ribs on each pocket flat, crush against the nut; 0 = none
+    rib_w: float = 1.2
     count: int = 1  # caps per plate, in a row
     gap: float = 6.0  # spacing between caps when count > 1
 
@@ -46,6 +48,8 @@ class NutCoverParams:
             raise ValueError(f"flange_t must be at least {cone + 1.5:.1f} mm for a 45 degree cone")
         if self.flange_t > self.height - 2:
             raise ValueError("flange_t leaves under 2 mm of body")
+        if not 0 <= self.rib_h <= 0.6 or self.rib_w < 0.6:
+            raise ValueError("rib_h 0-0.6 mm, rib_w >= 0.6 mm")
         if not 0 <= self.lead_in <= 2 or self.gap < 3 or not 1 <= self.count <= 6:
             raise ValueError("lead_in 0-2 mm, gap >= 3 mm, count 1-6")
 
@@ -71,6 +75,18 @@ def _cap(p: NutCoverParams) -> cq.Workplane:
     cap = cap.cut(pocket)
     if p.lead_in:
         cap = cap.faces(">Z").edges("not %CIRCLE").chamfer(p.lead_in)
+    if p.rib_h:
+        a = p.nut_af / 2
+        z_lo = p.height - p.pocket_depth
+        rib = (
+            cq.Workplane("XY")
+            .polyline([(-p.rib_w / 2, a + 0.3), (p.rib_w / 2, a + 0.3), (0, a - p.rib_h)])
+            .close()
+            .extrude(p.pocket_depth - p.lead_in)
+            .translate((0, 0, z_lo))
+        )
+        for k in range(6):
+            cap = cap.union(rib.rotate((0, 0, 0), (0, 0, 1), 60 * k), tol=1e-4)
     return cap
 
 
