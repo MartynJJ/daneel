@@ -23,10 +23,10 @@ class NutCoverParams:
     """Parameters for a hex nut cap. All dimensions in millimetres."""
 
     nut_af: float = 21.1  # pocket across flats (M14 nut is 21 mm AF plus slack)
-    outer_af: float = 27.5  # outer hex across flats
+    outer_af: float = 24.5  # outer hex across flats
     height: float = 20.6
     pocket_depth: float = 16.8
-    flange_d: float = 35.0  # round skirt at the open end
+    flange_d: float = 32.0  # round skirt at the open end
     flange_t: float = 6.3
     lead_in: float = 0.8  # chamfer at the pocket mouth
     rib_h: float = 0.35  # grip ribs on each pocket flat, crush against the nut; 0 = none
@@ -37,8 +37,8 @@ class NutCoverParams:
     def validate(self) -> None:
         if self.nut_af < 5:
             raise ValueError("nut_af must be at least 5 mm")
-        if self.outer_af < self.nut_af + 4:
-            raise ValueError("outer_af must exceed nut_af by at least 4 mm (2 mm walls)")
+        if self.outer_af < self.nut_af + 3:
+            raise ValueError("outer_af must exceed nut_af by at least 3 mm (1.5 mm walls)")
         if self.height < self.pocket_depth + 2:
             raise ValueError("height must exceed pocket_depth by at least 2 mm (roof)")
         if self.flange_d <= self.outer_af / math.cos(math.radians(30)):

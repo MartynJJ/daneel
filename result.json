@@ -1,6 +1,6 @@
 {
 	"error_string": "Success.",
-	"export_time": 1,
+	"export_time": 0,
 	"layer_height": 0.20000000298023224,
 	"plate_index": 0,
 	"prepare_time": 0,
@@ -10,7 +10,7 @@
 			"id": 1,
 			"sliced_time": 1,
 			"sliced_time_with_cache": 0,
-			"triangle_count": 2212,
+			"triangle_count": 2224,
 			"warning_message": ""
 		}
 	],

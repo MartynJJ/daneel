@@ -16,7 +16,7 @@ def test_default_is_valid_single_solid():
     s = _solid()
     bb = s.BoundingBox()
     assert s.isValid() and len(s.Solids()) == 1
-    assert bb.zlen == pytest.approx(20.6, abs=0.01) and bb.xlen == pytest.approx(35.0, abs=0.05)
+    assert bb.zlen == pytest.approx(20.6, abs=0.01) and bb.xlen == pytest.approx(32.0, abs=0.05)
 
 
 def test_closed_end_is_on_the_bed():
@@ -75,7 +75,7 @@ def test_count_makes_separate_caps():
         {"nut_af": 2.0},
         {"outer_af": 23.0},
         {"pocket_depth": 20.0},
-        {"flange_d": 30.0},
+        {"flange_d": 28.0},
         {"flange_t": 3.0},
         {"count": 9},
         {"rib_h": 1.0},
