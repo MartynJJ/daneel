@@ -22,14 +22,14 @@ import cadquery as cq
 class NutCoverParams:
     """Parameters for a hex nut cap. All dimensions in millimetres."""
 
-    nut_af: float = 21.2  # pocket across flats (M14 nut is 21 mm AF plus slack)
+    nut_af: float = 21.1  # pocket across flats (M14 nut is 21 mm AF plus slack)
     outer_af: float = 27.5  # outer hex across flats
     height: float = 20.6
     pocket_depth: float = 16.8
     flange_d: float = 35.0  # round skirt at the open end
     flange_t: float = 6.3
     lead_in: float = 0.8  # chamfer at the pocket mouth
-    rib_h: float = 0.3  # grip ribs on each pocket flat, crush against the nut; 0 = none
+    rib_h: float = 0.35  # grip ribs on each pocket flat, crush against the nut; 0 = none
     rib_w: float = 1.2
     count: int = 1  # caps per plate, in a row
     gap: float = 6.0  # spacing between caps when count > 1
