@@ -18,6 +18,7 @@ def test_registry_lists_stock_parts():
         "card",
         "enclosure",
         "hinge",
+        "insert_coupon",
         "jar",
         "light_mount",
         "nut_cover",

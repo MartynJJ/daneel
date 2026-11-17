@@ -21,6 +21,7 @@ _PARTS: dict[str, tuple[str, str, str]] = {
     "vial_holder": ("daneel.parts.vial_holder", "VialHolderParams", "build"),
     "vial_case": ("daneel.parts.vial_case", "VialCaseParams", "build"),
     "light_mount": ("daneel.parts.light_mount", "LightMountParams", "build"),
+    "insert_coupon": ("daneel.parts.insert_coupon", "InsertCouponParams", "build"),
     "nut_cover": ("daneel.parts.nut_cover", "NutCoverParams", "build"),
 }
 
